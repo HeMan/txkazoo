@@ -8,5 +8,5 @@ setup(
     maintainer_email='manish.tomar@rackspace.com',
     license='Apache 2.0',
     py_modules=['txkazoo'],
-    install_requires=open('requirements.txt').read().strip()
+    install_requires=['twisted==13.1.0', 'kazoo==1.3.1']
 )
