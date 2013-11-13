@@ -10,4 +10,3 @@ setup(
     py_modules=['txkazoo'],
     install_requires=open('requirements.txt').read().strip()
 )
-
