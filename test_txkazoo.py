@@ -102,6 +102,7 @@ class SetPartitionerTests(TxKazooTestCase):
         self.defer_to_thread.assert_called_with(
             self.kz_obj.SetPartitioner, '/path', set(range(2, 5)), time_boundary=20)
         self.assertEqual(part._partitioner, kz_part)
+        self.assertIsNone(part._state)
 
     def test_state_before_object(self):
         """
@@ -120,27 +121,27 @@ class SetPartitionerTests(TxKazooTestCase):
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
         self.assertEqual(partitioner.state, 'allocated')
 
-    def test_other_prop_before_object(self):
+    def test_state_on_error(self):
         """
-        accessing other properties before SetPartitioner object is created returns False
+        .state returns FAILURE if SetPartitioner creation errored
         """
-        attrs = ['failed', 'release', 'acquired']
-        self.defer_to_thread.return_value = defer.Deferred()
+        self.defer_to_thread.return_value = defer.fail(ValueError(2))
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
-        for attr in attrs:
-            self.assertFalse(getattr(partitioner, attr))
+        self.assertEqual(partitioner.state, PartitionState.FAILURE)
 
-    def test_other_prop_after_object(self):
+    def test_state_based_properties(self):
         """
-        accessing other properties after SetPartitioner object is created
-        delegates to the SetPartitioner object
+        accessing other state based properties return True or False depending on
+        current value of `state`
         """
-        attrs = ['failed', 'release', 'acquired']
-        self.defer_to_thread.return_value = defer.succeed(
-            mock.Mock(**dict.fromkeys(attrs, 4)))
+        attrs = {'failed': PartitionState.FAILURE, 'release': PartitionState.RELEASE,
+                 'acquired': PartitionState.ACQUIRED, 'allocating': PartitionState.ALLOCATING}
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
-        for attr in attrs:
-            self.assertEqual(getattr(partitioner, attr), 4)
+        for attr, value in attrs.items():
+            partitioner._state = value
+            self.assertTrue(getattr(partitioner, attr))
+            partitioner._state = 'else'
+            self.assertFalse(getattr(partitioner, attr))
 
     def test_method_invocation(self):
         """
@@ -169,11 +170,14 @@ class SetPartitionerTests(TxKazooTestCase):
 
 @defer.inlineCallbacks
 def partitioning(reactor, client):
-    part = client.SetPartitioner('/manitest_partition', set(range(1,10)))
+    client.add_listener(zk_listener)
+    part = client.SetPartitioner('/manitest_partition', set(range(1,11)))
     start = reactor.seconds()
     while True:
+        print('current state', client.state)
         if part.failed:
-            raise Exception('failed')
+            print('failed, creating new')
+            part = client.SetPartitioner('/manitest_partition', set(range(1,11)))
         if part.release:
             print('part changed. releasing')
             start = reactor.seconds()
@@ -202,10 +206,23 @@ def state_changes(reactor, client):
 
 
 @defer.inlineCallbacks
+def locking(reactor, client):
+    lock = client.Lock('/locks')
+    yield lock.acquire()
+    print('got lock')
+    d = defer.Deferred()
+    reactor.callLater(100, d.callback, None)
+    yield d
+    yield lock.release()
+
+@defer.inlineCallbacks
 def test_via_cli(reactor, *args):
-    client = TxKazooClient(hosts='127.0.0.1:2181,127.0.0.1:2182,127.0.0.1:2183')
+    client = TxKazooClient(hosts='127.0.0.1:2181')
+    #client = TxKazooClient(hosts='10.20.76.57:2181,10.20.76.57:2182,10.20.76.57:2183')
+    #client = TxKazooClient(hosts='192.168.24.128:2181')
     yield client.start()
     yield partitioning(reactor, client)
+    #yield locking(reactor, client)
     yield client.stop()
 
 if __name__ == '__main__':
