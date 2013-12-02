@@ -171,7 +171,7 @@ class SetPartitionerTests(TxKazooTestCase):
 @defer.inlineCallbacks
 def partitioning(reactor, client):
     client.add_listener(zk_listener)
-    part = client.SetPartitioner('/manitest_partition', set(range(1,11)))
+    part = client.SetPartitioner('/manitest_partition', set(range(1,11)), time_boundary=15)
     start = reactor.seconds()
     while True:
         print('current state', client.state)
@@ -216,10 +216,8 @@ def locking(reactor, client):
     yield lock.release()
 
 @defer.inlineCallbacks
-def test_via_cli(reactor, *args):
-    client = TxKazooClient(hosts='127.0.0.1:2181')
-    #client = TxKazooClient(hosts='10.20.76.57:2181,10.20.76.57:2182,10.20.76.57:2183')
-    #client = TxKazooClient(hosts='192.168.24.128:2181')
+def test_via_cli(reactor, hosts):
+    client = TxKazooClient(hosts=hosts)
     yield client.start()
     yield partitioning(reactor, client)
     #yield locking(reactor, client)
