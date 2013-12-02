@@ -131,35 +131,51 @@ class SetPartitioner(object):
     Twisted wrapper for SetPartitioner
     """
 
-    # These attributes do not block and hence will be given directly
-    get_attrs = ['failed', 'release', 'acquired']
-
     def __init__(self, client, path, set, **kwargs):
         """
-        Initializes SetPartitioner. Takes same arguments as
+        Initializes SetPartitioner. After `client`, takes same arguments as
         `kazoo.recipe.partitioner.SetPartitioner.__init__`
+
+        :param client: `kazoo.client.KazooClient` object
         """
         self._partitioner = None
+        self._state = PartitionState.ALLOCATING
         d = deferToThread(client.SetPartitioner, path, set, **kwargs)
         d.addCallback(self._initialized)
+        d.addErrback(self._errored)
 
     def _initialized(self, partitioner):
+        # Now that we successfully got actual SetPartitioner object, we store it and
+        # reset our internal self._state to delegate state to this new object
         self._partitioner = partitioner
+        self._state = None
+
+    def _errored(self, failure):
+        # SetPartioner was not created due to session expiry or network error
+        self._state = PartitionState.FAILURE
 
     @property
     def state(self):
-        # Until paritioner is initialzed, we know that it is allocating
-        return PartitionState.ALLOCATING if not self._partitioner else self._partitioner.state
+        # Return our state if we have it, otherwise delegate to self._partitioner
+        return self._state or self._partitioner.state
 
     @property
     def allocating(self):
         return self.state == PartitionState.ALLOCATING
 
+    @property
+    def failed(self):
+        return self.state == PartitionState.FAILURE
+
+    @property
+    def release(self):
+        return self.state == PartitionState.RELEASE
+
+    @property
+    def acquired(self):
+        return self.state == PartitionState.ACQUIRED
+
     def __getattr__(self, name):
-        if name in self.get_attrs:
-            # Until paritioner is initialzed, we know state is allocating and hence other
-            # properties will be False
-            return False if not self._partitioner else getattr(self._partitioner, name)
         return lambda *args, **kwargs: deferToThread(getattr(self._partitioner, name), *args, **kwargs)
 
     def __iter__(self):
