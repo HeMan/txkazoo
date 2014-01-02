@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='txkazoo',
-    version='0.0.2',
+    version='0.0.3',
     description='Twisted binding for Kazoo',
     maintainer='Manish Tomar',
     maintainer_email='manish.tomar@rackspace.com',
