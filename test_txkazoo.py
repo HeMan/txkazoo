@@ -4,16 +4,18 @@ Tests for `txkazoo.py`
 
 from __future__ import print_function
 import sys
+import logging
 
 import mock
 
 from twisted.trial.unittest import TestCase
 from twisted.internet import task, defer
+from twisted.python import log
 
 from kazoo.client import KazooClient
 from kazoo.recipe.partitioner import PartitionState
 
-from txkazoo import TxKazooClient, Lock
+from txkazoo import TxKazooClient, Lock, TxLogger
 
 
 class TxKazooTestCase(TestCase):
@@ -168,6 +170,48 @@ class SetPartitionerTests(TxKazooTestCase):
         self.assertEqual(list(partitioner), [2, 3])
 
 
+class TxLoggerTests(TestCase):
+    """
+    Tests for `TxLogger`
+    """
+
+    def setUp(self):
+        self.log = mock.Mock(spec=['msg', 'err'])
+        self.txlog = TxLogger(self.log)
+
+    def test_log(self):
+        self.txlog.log(logging.INFO, 'abc', c=2)
+        self.log.msg.assert_called_once_with('abc', c=2)
+
+    def test_log_arg(self):
+        self.txlog.log(logging.INFO, 'abc %d', 3, c=2)
+        self.log.msg.assert_called_once_with('abc 3', c=2)
+
+    def test_log_arg_fail(self):
+        self.txlog.log(logging.INFO, 'abc %d', 'xyz', c=2)
+        self.log.msg.assert_called_once_with('abc %d', c=2)
+
+    def test_debug(self):
+        self.txlog.debug('abc', d=4)
+        self.log.msg.assert_called_once_with('abc', d=4)
+
+    def test_info(self):
+        self.txlog.info('abc', d=4)
+        self.log.msg.assert_called_once_with('abc', d=4)
+
+    def test_warning(self):
+        self.txlog.info('abc', d=4)
+        self.log.msg.assert_called_once_with('abc', d=4)
+
+    def test_error(self):
+        self.txlog.error('abc', d=4)
+        self.log.err.assert_called_once_with(None, 'abc', d=4)
+
+    def test_exception(self):
+        self.txlog.exception('abc', d=4)
+        self.log.err.assert_called_once_with(None, 'abc', d=4)
+
+
 @defer.inlineCallbacks
 def partitioning(reactor, client):
     client.add_listener(zk_listener)
@@ -217,7 +261,8 @@ def locking(reactor, client):
 
 @defer.inlineCallbacks
 def test_via_cli(reactor, hosts):
-    client = TxKazooClient(hosts=hosts)
+    log.startLogging(sys.stdout)
+    client = TxKazooClient(hosts=hosts, txlog=log)
     yield client.start()
     yield partitioning(reactor, client)
     #yield locking(reactor, client)

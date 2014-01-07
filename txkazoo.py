@@ -12,6 +12,37 @@ from twisted.internet.threads import deferToThread
 from kazoo.client import KazooClient
 from kazoo.recipe.partitioner import PartitionState
 
+import logging
+from functools import partial
+
+
+class TxLogger(object):
+    """
+    Wraps twisted's log object as a logging.Logger
+    """
+
+    def __init__(self, log):
+        """
+        :param log: A twisted logger that has msg() and err() method
+        """
+        self._log = log
+
+        self.debug = partial(self._msg, logging.DEBUG)
+        self.info = partial(self._msg, logging.INFO)
+        self.warning = partial(self._msg, logging.WARNING)
+        self.exception = self.error = partial(self._msg, logging.ERROR)
+        self.log = self._msg
+
+    def _msg(self, lvl, msg, *args, **kwargs):
+        try:
+            msg = msg % args
+        except TypeError:
+            pass
+        if lvl <= logging.WARNING:
+            self._log.msg(msg, **kwargs)
+        else:
+            self._log.err(None, msg, **kwargs)
+
 
 class TxKazooClient(object):
     """
@@ -33,6 +64,11 @@ class TxKazooClient(object):
         """
         threads = kwargs.pop('threads', 10)
         reactor.suggestThreadPoolSize(threads)
+
+        log = kwargs.pop('txlog', None)
+        if log:
+            kwargs['logger'] = TxLogger(log)
+
         self.client = KazooClient(**kwargs)
         self._internal_listeners = dict()
 
