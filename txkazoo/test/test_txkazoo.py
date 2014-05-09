@@ -152,8 +152,12 @@ class SetPartitionerTests(TxKazooTestCase):
         accessing other state based properties return True or False depending on
         current value of `state`
         """
-        attrs = {'failed': PartitionState.FAILURE, 'release': PartitionState.RELEASE,
-                 'acquired': PartitionState.ACQUIRED, 'allocating': PartitionState.ALLOCATING}
+        attrs = {
+            'failed': PartitionState.FAILURE,
+            'release': PartitionState.RELEASE,
+            'acquired': PartitionState.ACQUIRED,
+            'allocating': PartitionState.ALLOCATING
+        }
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
         for attr, value in attrs.items():
             partitioner._state = value
