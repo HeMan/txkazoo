@@ -23,7 +23,7 @@ from txkazoo.log import TxLogger
 
 class TxLoggerTests(SynchronousTestCase):
     """
-    Tests for `TxLogger`
+    Tests for ``TxLogger``.
     """
     def setUp(self):
         self.log = Mock(spec=['msg', 'err'])

@@ -15,49 +15,44 @@
 """
 Tests for `txkazoo.py`
 """
-
 from __future__ import print_function
 import sys
-import logging
 
 import mock
 
+from kazoo.recipe.partitioner import PartitionState
 from twisted.trial.unittest import TestCase
 from twisted.internet import task, defer
 from twisted.python import log
-
-from kazoo.client import KazooClient
-from kazoo.recipe.partitioner import PartitionState
-
-from txkazoo import TxKazooClient, Lock, TxLogger
+from txkazoo import TxKazooClient, Lock
 
 
 class TxKazooTestCase(TestCase):
     """
-    Tests for `txkazoo.py`
+    Test case mixin for txkazoo tests.
     """
-
     def setUp(self):
         """
-        Mock actual KazooClient
+        Mock actual KazooClient and deferToThread.
         """
         self.kazoo_client = mock.patch('txkazoo.KazooClient').start()
         self.kz_obj = self.kazoo_client.return_value
         self.defer_to_thread = mock.patch('txkazoo.deferToThread').start()
         self.txkzclient = TxKazooClient(hosts='abc', threads=20)
 
+
     def tearDown(self):
         """
-        Stop the patching
+        Stop the patching.
         """
         mock.patch.stopall()
 
 
+
 class TxKazooClientTests(TxKazooTestCase):
     """
-    Tests for `TxKazooClient`
+    Tests for `TxKazooClient`.
     """
-
     @mock.patch('txkazoo.reactor')
     def test_init(self, mock_reactor):
         """
@@ -68,6 +63,7 @@ class TxKazooClientTests(TxKazooTestCase):
         self.kazoo_client.assert_called_with(hosts='abc', arg2='12')
         self.assertEqual(self.txkzclient.client, self.kz_obj)
 
+
     def test_method(self):
         """
         Any method is called in seperate thread
@@ -75,6 +71,7 @@ class TxKazooClientTests(TxKazooTestCase):
         d = self.txkzclient.start()
         self.defer_to_thread.assert_called_once_with(self.txkzclient.client.start)
         self.assertEqual(d, self.defer_to_thread.return_value)
+
 
     def test_property_get(self):
         """
@@ -85,9 +82,10 @@ class TxKazooClientTests(TxKazooTestCase):
         self.assertEqual(s, self.kazoo_client.return_value.state)
 
 
+
 class LockTests(TxKazooTestCase):
     """
-    Tests for `Lock`
+    Tests for `Lock`.
     """
 
     def test_method(self):
@@ -102,11 +100,11 @@ class LockTests(TxKazooTestCase):
         self.defer_to_thread.assert_called_once_with(_lock.acquire, timeout=10)
 
 
+
 class SetPartitionerTests(TxKazooTestCase):
     """
     Tests for `SetPartitioner`
     """
-
     def test_init(self):
         """
         Init calls actual SetPartitioner in seperate thread
@@ -120,6 +118,7 @@ class SetPartitionerTests(TxKazooTestCase):
         self.assertEqual(part._partitioner, kz_part)
         self.assertIsNone(part._state)
 
+
     def test_state_before_object(self):
         """
         .state returns ALLOCATING before SetPartitioner object is created
@@ -127,6 +126,7 @@ class SetPartitionerTests(TxKazooTestCase):
         self.defer_to_thread.return_value = defer.Deferred()
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
         self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
+
 
     def test_state_after_object(self):
         """
@@ -137,6 +137,7 @@ class SetPartitionerTests(TxKazooTestCase):
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
         self.assertEqual(partitioner.state, 'allocated')
 
+
     def test_state_on_error(self):
         """
         .state returns FAILURE if SetPartitioner creation errored
@@ -144,6 +145,7 @@ class SetPartitionerTests(TxKazooTestCase):
         self.defer_to_thread.return_value = defer.fail(ValueError(2))
         partitioner = self.txkzclient.SetPartitioner('/path', set(range(1, 10)))
         self.assertEqual(partitioner.state, PartitionState.FAILURE)
+
 
     def test_state_based_properties(self):
         """
@@ -159,6 +161,7 @@ class SetPartitionerTests(TxKazooTestCase):
             partitioner._state = 'else'
             self.assertFalse(getattr(partitioner, attr))
 
+
     def test_method_invocation(self):
         """
         Methods are invoked in seperate thread
@@ -172,6 +175,7 @@ class SetPartitionerTests(TxKazooTestCase):
         d = partitioner.wait_for_acquire(timeout=40)
         self.assertEqual(self.successResultOf(d), 3)
         self.defer_to_thread.assert_called_with(part_obj.wait_for_acquire, timeout=40)
+
 
     def test_iter(self):
         """
@@ -208,8 +212,10 @@ def partitioning(reactor, client):
         yield d
 
 
+
 def zk_listener(state):
     print('state change', state)
+
 
 
 @defer.inlineCallbacks
@@ -222,6 +228,7 @@ def state_changes(reactor, client):
         yield d
 
 
+
 @defer.inlineCallbacks
 def locking(reactor, client):
     lock = client.Lock('/locks')
@@ -232,6 +239,8 @@ def locking(reactor, client):
     yield d
     yield lock.release()
 
+
+
 @defer.inlineCallbacks
 def test_via_cli(reactor, hosts):
     log.startLogging(sys.stdout)
@@ -240,6 +249,8 @@ def test_via_cli(reactor, hosts):
     yield partitioning(reactor, client)
     #yield locking(reactor, client)
     yield client.stop()
+
+
 
 if __name__ == '__main__':
     task.react(test_via_cli, sys.argv[1:])
