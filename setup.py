@@ -1,5 +1,8 @@
 from setuptools import find_packages, setup
 
+with open("requirements.txt") as requirements_file:
+    dependencies = map(str.split, requirements_file.read().split())
+
 setup(
     name='txkazoo',
     version='0.0.4',
@@ -13,5 +16,5 @@ setup(
     license='Apache 2.0',
 
     packages=find_packages(),
-    install_requires=['twisted==13.2.0', 'kazoo==2.0b1']
+    install_requires=dependencies
 )
