@@ -21,7 +21,7 @@ import sys
 
 from twisted.internet import task, defer
 from twisted.python import log
-from txkazoo import TxKazooClient, Lock
+from txkazoo import TxKazooClient
 from txkazoo.test.util import TxKazooTestCase
 
 
@@ -56,27 +56,6 @@ class TxKazooClientTests(TxKazooTestCase):
         s = self.txkzclient.state
         self.assertFalse(self.defer_to_thread.called)
         self.assertEqual(s, self.kazoo_client.return_value.state)
-
-
-
-class LockTests(TxKazooTestCase):
-    """
-    Tests for `Lock`.
-    """
-
-    def test_method(self):
-        """
-        Any method invocation happens in seperate thread
-        """
-        self.defer_to_thread.return_value = defer.succeed(4)
-        _lock = mock.Mock()
-        lock = Lock(_lock)
-        d = lock.acquire(timeout=10)
-        self.assertEqual(self.successResultOf(d), 4)
-        self.defer_to_thread.assert_called_once_with(_lock.acquire, timeout=10)
-
-
-
 
 
 

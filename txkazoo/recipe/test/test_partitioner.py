@@ -24,7 +24,7 @@ from txkazoo.test.util import TxKazooTestCase
 
 class SetPartitionerTests(TxKazooTestCase):
     """
-    Tests for `SetPartitioner`
+    Tests for txkazoo's ``SetPartitioner``.
     """
     def test_init(self):
         """
