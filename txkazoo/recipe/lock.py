@@ -16,7 +16,7 @@
 The txkazoo equivalent of ``kazoo.recipe.lock``.
 """
 
-from txkazoo import deferToThread
+from twisted.internet import threads
 
 
 class Lock(object):
@@ -35,4 +35,4 @@ class Lock(object):
 
 
     def __getattr__(self, name):
-        return lambda *args, **kwargs: deferToThread(getattr(self._lock, name), *args, **kwargs)
+        return lambda *args, **kwargs: threads.deferToThread(getattr(self._lock, name), *args, **kwargs)

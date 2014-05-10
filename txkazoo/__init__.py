@@ -19,8 +19,7 @@ This isn't really Twistified Kazoo. Instead it delegates all blocking calls to s
 thread and returns result as Deferred. This allows usage of using Kazoo in Twisted reactor
 thread without blocking it
 """
-from twisted.internet import reactor
-from twisted.internet.threads import deferToThread
+from twisted.internet import reactor, threads
 
 from kazoo.client import KazooClient
 
@@ -49,8 +48,8 @@ class TxKazooClient(object):
         Takes same arguments as KazooClient and extra keyword argument `threads`
         that suggests thread pool size to be used
         """
-        threads = kwargs.pop('threads', 10)
-        reactor.suggestThreadPoolSize(threads)
+        num_threads = kwargs.pop('threads', 10)
+        reactor.suggestThreadPoolSize(num_threads)
 
         log = kwargs.pop('txlog', None)
         if log:
@@ -72,7 +71,7 @@ class TxKazooClient(object):
         if name in self.kz_get_attributes:
             # Assuming all attributes access are not blocking
             return getattr(self.client, name)
-        return lambda *args, **kwargs: deferToThread(getattr(self.client, name), *args, **kwargs)
+        return lambda *args, **kwargs: threads.deferToThread(getattr(self.client, name), *args, **kwargs)
 
 
     def add_listener(self, listener):
@@ -95,13 +94,13 @@ class TxKazooClient(object):
 
     def _watch_func(self, func, path, watch=None, **kwargs):
         if not watch:
-            return deferToThread(func, path, **kwargs)
+            return threads.deferToThread(func, path, **kwargs)
 
         def _watch(event):
             # Called from kazoo thread. Replaying in reactor
             reactor.callFromThread(watch, event)
 
-        return deferToThread(func, path, watch=_watch, **kwargs)
+        return threads.deferToThread(func, path, watch=_watch, **kwargs)
 
 
     def exists(self, path, watch=None):

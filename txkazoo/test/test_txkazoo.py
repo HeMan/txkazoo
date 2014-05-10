@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Tests for `txkazoo.py`
+Tests for `txkazoo.py`.
 """
 from __future__ import print_function
 import sys
@@ -37,7 +37,7 @@ class TxKazooTestCase(TestCase):
         """
         self.kazoo_client = mock.patch('txkazoo.KazooClient').start()
         self.kz_obj = self.kazoo_client.return_value
-        self.defer_to_thread = mock.patch('txkazoo.deferToThread').start()
+        self.defer_to_thread = mock.patch('twisted.internet.threads.deferToThread').start()
         self.txkzclient = TxKazooClient(hosts='abc', threads=20)
 
 

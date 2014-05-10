@@ -16,8 +16,8 @@
 The txkazoo equivalent of ``kazoo.recipe.partitioner``.
 """
 
-from txkazoo import deferToThread
 from kazoo.recipe.partitioner import PartitionState
+from twisted.internet import threads
 
 
 class SetPartitioner(object):
@@ -34,7 +34,7 @@ class SetPartitioner(object):
         """
         self._partitioner = None
         self._state = PartitionState.ALLOCATING
-        d = deferToThread(client.SetPartitioner, path, set, **kwargs)
+        d = threads.deferToThread(client.SetPartitioner, path, set, **kwargs)
         d.addCallback(self._initialized)
         d.addErrback(self._errored)
 
@@ -78,7 +78,7 @@ class SetPartitioner(object):
 
 
     def __getattr__(self, name):
-        return lambda *args, **kwargs: deferToThread(getattr(self._partitioner, name), *args, **kwargs)
+        return lambda *args, **kwargs: threads.deferToThread(getattr(self._partitioner, name), *args, **kwargs)
 
 
     def __iter__(self):
