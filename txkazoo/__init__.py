@@ -19,7 +19,6 @@ This isn't really Twistified Kazoo. Instead it delegates all blocking calls to s
 thread and returns result as Deferred. This allows usage of using Kazoo in Twisted reactor
 thread without blocking it
 """
-
 from twisted.internet import reactor
 from twisted.internet.threads import deferToThread
 
@@ -27,6 +26,8 @@ from kazoo.client import KazooClient
 from kazoo.recipe.partitioner import PartitionState
 
 from txkazoo.log import TxLogger
+from txkazoo._version import __version__
+version = __version__
 
 
 class TxKazooClient(object):
