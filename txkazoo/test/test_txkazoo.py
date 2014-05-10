@@ -16,37 +16,14 @@
 Tests for `txkazoo.py`.
 """
 from __future__ import print_function
+import mock
 import sys
 
-import mock
-
 from kazoo.recipe.partitioner import PartitionState
-from twisted.trial.unittest import TestCase
 from twisted.internet import task, defer
 from twisted.python import log
 from txkazoo import TxKazooClient, Lock
-
-
-class TxKazooTestCase(TestCase):
-    """
-    Test case mixin for txkazoo tests.
-    """
-    def setUp(self):
-        """
-        Mock actual KazooClient and deferToThread.
-        """
-        self.kazoo_client = mock.patch('txkazoo.KazooClient').start()
-        self.kz_obj = self.kazoo_client.return_value
-        self.defer_to_thread = mock.patch('twisted.internet.threads.deferToThread').start()
-        self.txkzclient = TxKazooClient(hosts='abc', threads=20)
-
-
-    def tearDown(self):
-        """
-        Stop the patching.
-        """
-        mock.patch.stopall()
-
+from txkazoo.test.util import TxKazooTestCase
 
 
 class TxKazooClientTests(TxKazooTestCase):
