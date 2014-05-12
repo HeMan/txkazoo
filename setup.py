@@ -1,5 +1,7 @@
 from os.path import dirname, join
 from setuptools import find_packages, setup
+from setuptools.command.test import test as TestCommand
+from sys import exit
 
 package_name = "txkazoo"
 
@@ -13,6 +15,16 @@ match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_line, re.M)
 version_string = match.group(1)
 
 dependencies = map(str.split, read("requirements.txt").split())
+
+class Tox(TestCommand):
+    def finalize_options(self):
+        TestCommand.finalize_options(self)
+        self.test_suite = True
+
+    def run_tests(self):
+        #import here, cause outside the eggs aren't loaded
+        import tox
+        exit(tox.cmdline([]))
 
 setup(
     name=package_name,
@@ -40,5 +52,8 @@ setup(
 
     packages=find_packages(),
     install_requires=dependencies,
+    test_suite="{0}.test".format(package_name),
+    cmdclass={'test': Tox},
+
     zip_safe=True
 )
