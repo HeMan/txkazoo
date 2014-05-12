@@ -13,50 +13,14 @@
 # limitations under the License.
 
 """
-Tests for `txkazoo.py`.
+Test txkazoo test remnants.
 """
 from __future__ import print_function
-import mock
 import sys
 
 from twisted.internet import task, defer
 from twisted.python import log
 from txkazoo import TxKazooClient
-from txkazoo.test.util import TxKazooTestCase
-
-
-class TxKazooClientTests(TxKazooTestCase):
-    """
-    Tests for `TxKazooClient`.
-    """
-    @mock.patch('txkazoo.reactor')
-    def test_init(self, mock_reactor):
-        """
-        __init__ sets up thread size and creates KazooClient
-        """
-        self.txkzclient = TxKazooClient(hosts='abc', arg2='12', threads=20)
-        mock_reactor.suggestThreadPoolSize.assert_called_once_with(20)
-        self.kazoo_client.assert_called_with(hosts='abc', arg2='12')
-        self.assertEqual(self.txkzclient.client, self.kz_obj)
-
-
-    def test_method(self):
-        """
-        Any method is called in seperate thread
-        """
-        d = self.txkzclient.start()
-        self.defer_to_thread.assert_called_once_with(self.txkzclient.client.start)
-        self.assertEqual(d, self.defer_to_thread.return_value)
-
-
-    def test_property_get(self):
-        """
-        Accessing property does not defer to thread. It is returned immediately
-        """
-        s = self.txkzclient.state
-        self.assertFalse(self.defer_to_thread.called)
-        self.assertEqual(s, self.kazoo_client.return_value.state)
-
 
 
 @defer.inlineCallbacks

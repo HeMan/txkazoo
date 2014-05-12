@@ -29,7 +29,7 @@ class TxKazooTestCase(TestCase):
         """
         Mock actual KazooClient and deferToThread.
         """
-        self.kazoo_client = mock.patch('txkazoo.KazooClient').start()
+        self.kazoo_client = mock.patch('kazoo.client.KazooClient').start()
         self.kz_obj = self.kazoo_client.return_value
         self.defer_to_thread = mock.patch('twisted.internet.threads.deferToThread').start()
         self.txkzclient = TxKazooClient(hosts='abc', threads=20)
