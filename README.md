@@ -1,9 +1,11 @@
-txkazoo
-=======
+# txkazoo
 
-Twisted wrapper for [Kazoo](https://github.com/python-zk/kazoo/) library
+Twisted wrapper for [Kazoo](https://github.com/python-zk/kazoo/).
 
-Status
-------
+## Status
 
-This is not yet meant for public use. 
+This is not yet meant for public use.
+
+## Running tests
+
+Use [`tox`](http://tox.testrun.org/).
