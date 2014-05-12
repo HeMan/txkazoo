@@ -1,3 +1,4 @@
 check-manifest==0.19
 coverage==3.7.1
 pip-tools==0.3.4
+pyroma==1.6
