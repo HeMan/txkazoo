@@ -22,7 +22,7 @@ class TxKazooClientTests(TxKazooTestCase):
     """
     Tests for `TxKazooClient`.
     """
-    @mock.patch('twisted.internet.reactor')
+    @mock.patch('txkazoo.client.reactor')
     def test_init(self, mock_reactor):
         """
         __init__ sets up thread size and creates KazooClient
