@@ -1,14 +1,18 @@
+from os.path import dirname, join
 from setuptools import find_packages, setup
 
 package_name = "txkazoo"
 
+def read(path):
+    with open(join(dirname(__file__), path)) as f:
+        return f.read()
+
 import re
-version_line = open("{0}/_version.py".format(package_name), "rt").read()
+version_line = read("{0}/_version.py".format(package_name))
 match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", version_line, re.M)
 version_string = match.group(1)
 
-with open("requirements.txt") as requirements_file:
-    dependencies = map(str.split, requirements_file.read().split())
+dependencies = map(str.split, read("requirements.txt").split())
 
 setup(
     name=package_name,
