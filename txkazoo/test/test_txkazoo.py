@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Test txkazoo test remnants.
-"""
+"""Test txkazoo test remnants."""
 from __future__ import print_function
 import sys
 
@@ -26,19 +24,22 @@ from txkazoo import TxKazooClient
 @defer.inlineCallbacks
 def partitioning(reactor, client):
     client.add_listener(zk_listener)
-    part = client.SetPartitioner('/manitest_partition', set(range(1,11)), time_boundary=15)
+    part = client.SetPartitioner(
+        '/manitest_partition', set(range(1, 11)), time_boundary=15)
     start = reactor.seconds()
     while True:
         print('current state', client.state)
         if part.failed:
             print('failed, creating new')
-            part = client.SetPartitioner('/manitest_partition', set(range(1,11)))
+            part = client.SetPartitioner(
+                '/manitest_partition', set(range(1, 11)))
         if part.release:
             print('part changed. releasing')
             start = reactor.seconds()
             yield part.release_set()
         elif part.acquired:
-            print('got part {} in {} seconds'.format(list(part), reactor.seconds() - start))
+            print('got part {} in {} seconds'.format(
+                list(part), reactor.seconds() - start))
         elif part.allocating:
             print('allocating')
         d = defer.Deferred()
@@ -46,10 +47,8 @@ def partitioning(reactor, client):
         yield d
 
 
-
 def zk_listener(state):
     print('state change', state)
-
 
 
 @defer.inlineCallbacks
@@ -60,7 +59,6 @@ def state_changes(reactor, client):
         d = defer.Deferred()
         reactor.callLater(1, d.callback, None)
         yield d
-
 
 
 @defer.inlineCallbacks
@@ -74,16 +72,14 @@ def locking(reactor, client):
     yield lock.release()
 
 
-
 @defer.inlineCallbacks
 def test_via_cli(reactor, hosts):
     log.startLogging(sys.stdout)
     client = TxKazooClient(hosts=hosts, txlog=log)
     yield client.start()
     yield partitioning(reactor, client)
-    #yield locking(reactor, client)
+    # yield locking(reactor, client)
     yield client.stop()
-
 
 
 if __name__ == '__main__':

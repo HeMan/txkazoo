@@ -22,48 +22,40 @@ from txkazoo.log import TxLogger
 
 
 class TxLoggerTests(SynchronousTestCase):
-    """
-    Tests for ``TxLogger``.
-    """
+
+    """Tests for ``TxLogger``."""
+
     def setUp(self):
         self.log = Mock(spec=['msg', 'err'])
         self.txlog = TxLogger(self.log)
-
 
     def test_log(self):
         self.txlog.log(INFO, 'abc', c=2)
         self.log.msg.assert_called_once_with('abc', c=2)
 
-
     def test_log_arg(self):
         self.txlog.log(INFO, 'abc %d', 3, c=2)
         self.log.msg.assert_called_once_with('abc 3', c=2)
-
 
     def test_log_arg_fail(self):
         self.txlog.log(INFO, 'abc %d', 'xyz', c=2)
         self.log.msg.assert_called_once_with('abc %d', c=2)
 
-
     def test_debug(self):
         self.txlog.debug('abc', d=4)
         self.log.msg.assert_called_once_with('abc', d=4)
-
 
     def test_info(self):
         self.txlog.info('abc', d=4)
         self.log.msg.assert_called_once_with('abc', d=4)
 
-
     def test_warning(self):
         self.txlog.info('abc', d=4)
         self.log.msg.assert_called_once_with('abc', d=4)
 
-
     def test_error(self):
         self.txlog.error('abc', d=4)
         self.log.err.assert_called_once_with(None, 'abc', d=4)
-
 
     def test_exception(self):
         self.txlog.exception('abc', d=4)

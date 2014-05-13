@@ -73,7 +73,6 @@ class TxKazooClient(object):
         blocking_method = getattr(self.client, name)
         return partial(threads.deferToThread, blocking_method)
 
-
     def add_listener(self, listener):
         # This call does not block and is probably not thread safe. It is best if it
         # is called from twisted reactor thread only

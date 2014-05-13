@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Tests for the txkazoo equivalent of ``kazoo.recipe.lock``.
-"""
+"""Tests for the txkazoo equivalent of ``kazoo.recipe.lock``."""
 import mock
 
 from txkazoo.recipe.lock import Lock
@@ -23,13 +21,11 @@ from txkazoo.test.util import TxKazooTestCase
 
 
 class LockTests(TxKazooTestCase):
-    """
-    Tests for `Lock`.
-    """
+
+    """Tests for `Lock`."""
+
     def test_method(self):
-        """
-        Any method invocation happens in seperate thread.
-        """
+        """Any method invocation happens in seperate thread."""
         self.defer_to_thread.return_value = defer.succeed(4)
         _lock = mock.Mock()
         lock = Lock(_lock)

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Various utilities for testing txkazoo.
-"""
+"""Various utilities for testing txkazoo."""
 import mock
 
 from twisted.trial.unittest import TestCase
@@ -22,21 +20,17 @@ from txkazoo import TxKazooClient
 
 
 class TxKazooTestCase(TestCase):
-    """
-    Test case mixin for txkazoo tests.
-    """
+
+    """Test case mixin for txkazoo tests."""
+
     def setUp(self):
-        """
-        Mock actual KazooClient and deferToThread.
-        """
+        """Mock actual KazooClient and deferToThread."""
         self.kazoo_client = mock.patch('kazoo.client.KazooClient').start()
         self.kz_obj = self.kazoo_client.return_value
-        self.defer_to_thread = mock.patch('twisted.internet.threads.deferToThread').start()
+        self.defer_to_thread = mock.patch(
+            'twisted.internet.threads.deferToThread').start()
         self.txkzclient = TxKazooClient(hosts='abc', threads=20)
 
-
     def tearDown(self):
-        """
-        Stop the patching.
-        """
+        """Stop the patching."""
         mock.patch.stopall()
