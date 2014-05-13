@@ -58,14 +58,17 @@ class TxKazooClient(object):
         self._internal_listeners = dict()
 
     def __getattr__(self, name):
-        """Delegates method executions to a thread pool. Does this by returning
-        a function that calls `KazooClient.method` in seperate thread if `name`
-        is method name.
+        """Gets an attribute from the wrapped client, delegating execution to
+        a threadpool if necessary.
+
+        If ``name`` refers to a blocking method, executes the method
+        in a thread pool. Otherwise, perform regular attribute access
+        on the wrapped client.
 
         :return: if ``name`` is the name of a blocking method, a
                  :class:`twisted.internet.defer.Deferred` that fires
-                 with result of requested method. Otherwise, regular
-                 attribute access on the wrapped client.
+                 with result of requested method. Otherwise, the
+                 wrapped client's attribute with the given name.
 
         """
         if name in self.kz_get_attributes:
