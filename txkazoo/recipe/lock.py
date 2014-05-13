@@ -19,6 +19,7 @@ from twisted.internet import threads
 
 
 class Lock(object):
+
     """
     Twisted-friendly wrapper for ``kazoo.recipe.lock.Lock``.
 

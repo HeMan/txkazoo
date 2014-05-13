@@ -20,6 +20,7 @@ from twisted.internet import threads
 
 
 class SetPartitioner(object):
+
     """
     Twisted-friendly wrapper for ``kazoo.recipe.partitioner.SetPartitioner``.
     """
