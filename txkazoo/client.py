@@ -112,10 +112,12 @@ class TxKazooClient(object):
         return self._watch_func(self.client.get_async, path, watch)
 
     def get_children(self, path, watch=None, include_data=False):
-        return self._watch_func(self.client.get_children, path, watch, include_data=include_data)
+        return self._watch_func(
+            self.client.get_children, path, watch, include_data=include_data)
 
     def get_children_async(self, path, watch=None, include_data=False):
-        return self._watch_func(self.client.get_children_async, path, watch, include_data=include_data)
+        return self._watch_func(
+            self.client.get_children_async, path, watch, include_data=include_data)
 
     def Lock(self, path, identifier=None):
         """Return Twisted wrapper for `Lock` object corresponding to this

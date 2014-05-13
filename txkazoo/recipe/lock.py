@@ -14,11 +14,11 @@
 
 """The txkazoo equivalent of ``kazoo.recipe.lock``."""
 
+from functools import partial
 from twisted.internet import threads
 
 
 class Lock(object):
-
     """
     Twisted-friendly wrapper for ``kazoo.recipe.lock.Lock``.
 
@@ -34,4 +34,5 @@ class Lock(object):
         self._lock = lock
 
     def __getattr__(self, name):
-        return lambda *args, **kwargs: threads.deferToThread(getattr(self._lock, name), *args, **kwargs)
+        blocking_method = getattr(self._lock, name)
+        return partial(threads.deferToThread, blocking_method)

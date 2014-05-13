@@ -14,12 +14,12 @@
 
 """The txkazoo equivalent of ``kazoo.recipe.partitioner``."""
 
+from functools import partial
 from kazoo.recipe.partitioner import PartitionState
 from twisted.internet import threads
 
 
 class SetPartitioner(object):
-
     """
     Twisted-friendly wrapper for ``kazoo.recipe.partitioner.SetPartitioner``.
     """
@@ -70,7 +70,8 @@ class SetPartitioner(object):
         return self.state == PartitionState.ACQUIRED
 
     def __getattr__(self, name):
-        return lambda *args, **kwargs: threads.deferToThread(getattr(self._partitioner, name), *args, **kwargs)
+        blocking_method = getattr(self._partitioner, name)
+        return partial(threads.deferToThread, blocking_method)
 
     def __iter__(self):
         for elem in self._partitioner:
