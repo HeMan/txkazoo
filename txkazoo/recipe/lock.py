@@ -21,15 +21,16 @@ from twisted.internet import threads
 class Lock(object):
 
     """
-    Twisted-friendly wrapper for ``kazoo.recipe.lock.Lock``.
+    Twisted-friendly wrapper for :class:`kazoo.recipe.lock.Lock`.
 
-    All the methods in `kazoo.recipe.lock.Lock` are delegated to thread
+    All blocking methods of that class are delegated to a thread pool.
     """
 
     def __init__(self, lock):
         """Initialize the txkazoo Lock.
 
-        :param lock: `kazoo.recipe.lock.Lock` object being wrapped.
+        :param lock: the blocking kazoo lock being wrapped.
+        :type lock: :class:`kazoo.recipe.lock.Lock`
 
         """
         self._lock = lock

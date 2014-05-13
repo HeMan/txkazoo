@@ -22,14 +22,17 @@ from twisted.internet import threads
 class SetPartitioner(object):
 
     """
-    Twisted-friendly wrapper for ``kazoo.recipe.partitioner.SetPartitioner``.
+    Twisted-friendly wrapper for :class`kazoo.recipe.partitioner.SetPartitioner`.
     """
 
     def __init__(self, client, path, set, **kwargs):
-        """Initializes SetPartitioner. After `client`, takes same arguments as
-        `kazoo.recipe.partitioner.SetPartitioner.__init__`
+        """Initialize SetPartitioner.
 
-        :param client: `kazoo.client.KazooClient` object
+        After the `client` argument, takes same arguments as
+        :class:`kazoo.recipe.partitioner.SetPartitioner.__init__`.
+
+        :param client: blocking kazoo client
+        :type client: :class:`kazoo.client.KazooClient`
 
         """
         self._partitioner = None
@@ -39,13 +42,23 @@ class SetPartitioner(object):
         d.addErrback(self._errored)
 
     def _initialized(self, partitioner):
-        # Now that we successfully got actual SetPartitioner object, we store it and
-        # reset our internal self._state to delegate state to this new object
+        """Now that we successfully got an actual
+        :class:`kazoo.recipe.partitioner.SetPartitioner` object, we
+        store it and reset our internal ``_state`` to ``None``,
+        causing the ``state`` property to defer to the partitioner's
+        state.
+
+        """
         self._partitioner = partitioner
         self._state = None
 
     def _errored(self, failure):
-        # SetPartioner was not created due to session expiry or network error
+        """Couldn't get a :class:`kazoo.recipe.partitioner.SetPartitioner`:
+        most likely a session expired or a network error occurred.
+
+        Sets the internal state to ``PartitionState.FAILURE``.
+
+        """
         self._state = PartitionState.FAILURE
 
     @property

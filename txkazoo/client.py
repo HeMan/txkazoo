@@ -62,8 +62,10 @@ class TxKazooClient(object):
         a function that calls `KazooClient.method` in seperate thread if `name`
         is method name.
 
-        :return: `Deferred` that fires with result of executed method if `name`
-                 is name of method. Otherwise, `KazooClient.property` value is returned
+        :return: if ``name`` is the name of a blocking method, a
+                 :class:`twisted.internet.defer.Deferred` that fires
+                 with result of requested method. Otherwise, regular
+                 attribute access on the wrapped client.
 
         """
         if name in self.kz_get_attributes:
