@@ -74,5 +74,4 @@ class SetPartitioner(object):
         return partial(threads.deferToThread, blocking_method)
 
     def __iter__(self):
-        for elem in self._partitioner:
-            yield elem
+        return iter(self._partitioner)
