@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""
-Twisted binding for Kazoo.
+"""Twisted binding for Kazoo.
 
-This doesn't really reimplement Kazoo with Twisted. Instead it
-delegates all blocking calls to seperate thread and returns result as
-Deferred. This allows usage of using Kazoo in Twisted reactor thread
-without blocking it.
+This doesn't really reimplement Kazoo with Twisted. Instead it delegates
+all blocking calls to seperate thread and returns result as Deferred.
+This allows usage of using Kazoo in Twisted reactor thread without
+blocking it.
+
 """
 from txkazoo.client import TxKazooClient
 from txkazoo.log import TxLogger

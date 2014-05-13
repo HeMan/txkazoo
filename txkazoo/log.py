@@ -15,10 +15,10 @@
 import logging
 from functools import partial
 
+
 class TxLogger(object):
-    """
-    Wraps twisted's log object as a logging.Logger
-    """
+
+    """Wraps twisted's log object as a logging.Logger."""
 
     def __init__(self, log):
         """
