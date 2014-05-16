@@ -30,7 +30,7 @@ setup(
     name=package_name,
     version=version_string,
     description='Twisted binding for Kazoo',
-    long_description=open("README.md").read(),
+    long_description=read("README.md"),
     url="https://github.com/rackerlabs/txkazoo",
 
     author='Manish Tomar',
