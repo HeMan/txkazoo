@@ -39,7 +39,7 @@ setup(
     maintainer_email='manish.tomar@rackspace.com',
 
     license='Apache 2.0',
-    keywords="crypto urwid twisted",
+    keywords="twisted kazoo zookeeper distributed",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Framework :: Twisted",
