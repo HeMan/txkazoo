@@ -58,8 +58,7 @@ class TxKazooClient(object):
         self._internal_listeners = dict()
 
     def __getattr__(self, name):
-        """Gets an attribute from the wrapped client, delegating execution to
-        a threadpool if necessary.
+        """Get and maybe wrap an attribute from the wrapped client.
 
         If ``name`` refers to a blocking method, executes the method
         in a thread pool. Otherwise, perform regular attribute access
@@ -79,18 +78,21 @@ class TxKazooClient(object):
         return partial(threads.deferToThread, blocking_method)
 
     def add_listener(self, listener):
-        # This call does not block and is probably not thread safe. It is best if it
-        # is called from twisted reactor thread only
+        """Add the given listener to the wrapped client.
 
+        Even though the event will be coming from the txkazoo thread,
+        the listener will be called in the reactor thread. This method
+        should only be called from the reactor thread.
+
+        """
         def _listener(state):
-            # Called from kazoo thread. Replaying the original listener in reactor
-            # thread
             reactor.callFromThread(listener, state)
 
         self._internal_listeners[listener] = _listener
         return self.client.add_listener(_listener)
 
     def remove_listener(self, listener):
+        """Remove the given listener from the wrapped client."""
         _listener = self._internal_listeners.pop(listener)
         self.client.remove_listener(_listener)
 
@@ -105,31 +107,35 @@ class TxKazooClient(object):
         return threads.deferToThread(func, path, watch=_watch, **kwargs)
 
     def exists(self, path, watch=None):
+        """See py:func:`kazoo.client.KazooClient.exists`."""
         return self._watch_func(self.client.exists, path, watch)
 
     def exists_async(self, path, watch=None):
+        """See py:func:`kazoo.client.KazooClient.exists_async`."""
         return self._watch_func(self.client.exists_async, path, watch)
 
     def get(self, path, watch=None):
+        """See py:func:`kazoo.client.KazooClient.get`."""
         return self._watch_func(self.client.get, path, watch)
 
     def get_async(self, path, watch=None):
+        """See py:func:`kazoo.client.KazooClient.get_async`."""
         return self._watch_func(self.client.get_async, path, watch)
 
     def get_children(self, path, watch=None, include_data=False):
-        return self._watch_func(
-            self.client.get_children, path, watch, include_data=include_data)
+        """See py:func:`kazoo.client.KazooClient.get_children`."""
+        return self._watch_func(self.client.get_children,
+                                path, watch, include_data=include_data)
 
     def get_children_async(self, path, watch=None, include_data=False):
-        return self._watch_func(
-            self.client.get_children_async, path, watch, include_data=include_data)
+        """See py:func:`kazoo.client.KazooClient.get_children_async`."""
+        return self._watch_func(self.client.get_children_async,
+                                path, watch, include_data=include_data)
 
     def Lock(self, path, identifier=None):
-        """Return Twisted wrapper for `Lock` object corresponding to this
-        client."""
+        """Return a wrapped ``Lock`` for this client."""
         return Lock(self.client.Lock(path, identifier))
 
     def SetPartitioner(self, path, set, **kwargs):
-        """Return Twisted wrapper for `SetPartitioner` object corresponding to
-        this client."""
+        """Return a wrapped ``SetPartitioner`` for this client."""
         return SetPartitioner(self.client, path, set, **kwargs)

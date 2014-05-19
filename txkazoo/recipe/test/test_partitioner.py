@@ -31,7 +31,8 @@ class SetPartitionerTests(TxKazooTestCase):
         part = self.txkzclient.SetPartitioner(
             '/path', set(range(2, 5)), time_boundary=20)
         self.defer_to_thread.assert_called_with(
-            self.kz_obj.SetPartitioner, '/path', set(range(2, 5)), time_boundary=20)
+            self.kz_obj.SetPartitioner,
+            '/path', set(range(2, 5)), time_boundary=20)
         self.assertEqual(part._partitioner, kz_part)
         self.assertIsNone(part._state)
 

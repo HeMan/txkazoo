@@ -12,17 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""Bridge between :mod:`twisted.python.log` and :mod:`logging`."""
+
 import logging
 from functools import partial
 
 
 class TxLogger(object):
 
-    """Wraps twisted's log object as a logging.Logger."""
+    """Wraps twisted's log object as a ``logging.Logger``."""
 
     def __init__(self, log):
-        """
-        :param log: A twisted logger that has msg() and err() method
+        """Initialize a ``TxLogger``.
+
+        :param log: A twisted logger (has ``msg`` and ``err`` methods)
+
         """
         self._log = log
 

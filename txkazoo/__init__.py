@@ -20,9 +20,11 @@ This allows usage of using Kazoo in Twisted reactor thread without
 blocking it.
 
 """
+from txkazoo._version import __version__
+version = __version__
+
 from txkazoo.client import TxKazooClient
 from txkazoo.log import TxLogger
 from txkazoo.recipe.lock import Lock
 from txkazoo.recipe.partitioner import SetPartitioner
-from txkazoo._version import __version__
-version = __version__
+__all__ = ("TxKazooClient", "TxLogger", "Lock", "SetPartitioner")

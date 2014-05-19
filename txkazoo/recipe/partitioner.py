@@ -21,14 +21,15 @@ from twisted.internet import threads
 
 class SetPartitioner(object):
 
-    """
-    Twisted-friendly wrapper for :class`kazoo.recipe.partitioner.SetPartitioner`.
+    """Wrapper for :class:`kazoo.recipe.partitioner.SetPartitioner`.
+
+    This is a Twisted-friendly wrapped based on a thread pool.
     """
 
     def __init__(self, client, path, set, **kwargs):
         """Initialize SetPartitioner.
 
-        After the `client` argument, takes same arguments as
+        After the ``client`` argument, takes same arguments as
         :class:`kazoo.recipe.partitioner.SetPartitioner.__init__`.
 
         :param client: blocking kazoo client
@@ -42,7 +43,9 @@ class SetPartitioner(object):
         d.addErrback(self._errored)
 
     def _initialized(self, partitioner):
-        """Now that we successfully got an actual
+        """Store the partitioner and reset the internal state.
+
+        Now that we successfully got an actual
         :class:`kazoo.recipe.partitioner.SetPartitioner` object, we
         store it and reset our internal ``_state`` to ``None``,
         causing the ``state`` property to defer to the partitioner's
@@ -53,39 +56,72 @@ class SetPartitioner(object):
         self._state = None
 
     def _errored(self, failure):
-        """Couldn't get a :class:`kazoo.recipe.partitioner.SetPartitioner`:
-        most likely a session expired or a network error occurred.
+        """Remember that we failed to initialize.
 
-        Sets the internal state to ``PartitionState.FAILURE``.
+        This means we couldn't get a
+        :class:`kazoo.recipe.partitioner.SetPartitioner`: most likely
+        a session expired or a network error occurred. The internal
+        state is set to ``PartitionState.FAILURE``.
 
         """
         self._state = PartitionState.FAILURE
 
     @property
     def state(self):
-        # Return our state if we have it, otherwise delegate to
-        # self._partitioner
+        """The current state of this partitioner.
+
+        If we are still initializing, or we've failed to initialize,
+        this will be this object's internal state. Otherwise, defers
+        to the partitioner's state.
+
+        """
         return self._state or self._partitioner.state
 
     @property
     def allocating(self):
+        """Check if the partitioner is still allocating.
+
+        This means either we're still getting a partitioner, or the
+        partitioner itself is still allocating (see
+        :py:func:`kazoo.recipe.partitioner.Partitioner.allocating`).
+
+        """
         return self.state == PartitionState.ALLOCATING
 
     @property
     def failed(self):
+        """Check if the partitioner has failed.
+
+        This means we've either failed to get a partitioner, or the
+        partitioner itself has failed to partition the set (see
+        :py:func:`kazoo.recipe.partitioner.Partitioner.failed`).
+
+        """
         return self.state == PartitionState.FAILURE
 
     @property
     def release(self):
+        """Check if the set needs to be repartitioned.
+
+        See :py:func:`kazoo.recipe.partitioner.Partitioner.released`.
+
+        """
         return self.state == PartitionState.RELEASE
 
     @property
     def acquired(self):
+        """Check if the set partitioning has been acquired.
+
+        See :py:func:`kazoo.recipe.partitioner.Partitioner.acquired`.
+
+        """
         return self.state == PartitionState.ACQUIRED
 
     def __getattr__(self, name):
+        """Get a method of the partitioner and wraps with a thread pool."""
         blocking_method = getattr(self._partitioner, name)
         return partial(threads.deferToThread, blocking_method)
 
     def __iter__(self):
+        """Iterate over the wrapped partitioner."""
         return iter(self._partitioner)

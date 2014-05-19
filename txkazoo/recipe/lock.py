@@ -36,5 +36,6 @@ class Lock(object):
         self._lock = lock
 
     def __getattr__(self, name):
+        """Get a method of the lock and wraps with a thread pool."""
         blocking_method = getattr(self._lock, name)
         return partial(threads.deferToThread, blocking_method)
