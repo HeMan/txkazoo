@@ -1,5 +1,8 @@
 # txkazoo
 
+[![Build Status](https://travis-ci.org/rackerlabs/txkazoo.svg)](https://travis-ci.org/rackerlabs/txkazoo)
+[![Coverage Status](https://coveralls.io/repos/rackerlabs/txkazoo/badge.png)](https://coveralls.io/r/rackerlabs/txkazoo)
+
 Twisted wrapper for [Kazoo](https://github.com/python-zk/kazoo/).
 
 ## Status
