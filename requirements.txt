@@ -1,3 +1,4 @@
-twisted==13.1.0
 kazoo==2.0b1
 mock==1.0.1
+Twisted==14.0.0
+zope.interface==4.1.1
