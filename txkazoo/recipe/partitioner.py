@@ -21,7 +21,8 @@ from twisted.internet import threads
 
 class SetPartitioner(object):
 
-    """Wrapper for :class:`kazoo.recipe.partitioner.SetPartitioner`.
+    """
+    Wrapper for :class:`~kazoo.recipe.partitioner.SetPartitioner`.
 
     This is a Twisted-friendly wrapped based on a thread pool.
     """
