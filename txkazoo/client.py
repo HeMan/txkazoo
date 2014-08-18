@@ -52,12 +52,6 @@ class _RunCallbacksInReactorThreadWrapper(object):
 
         The listener will be wrapped, so that it will be called in the reactor
         thread. This way, it can safely use Twisted APIs.
-
-        # REVIEW: Original docstring claimed that this should only be called
-        # from the reactor thread. Why? Old docstring below:
-        # Even though the event will be coming from the txkazoo thread,
-        # the listener will be called in the reactor thread. This method
-        # should only be called from the reactor thread.
         """
         internal_listener = partial(self._call_in_reactor_thread, listener)
         self._internal_listeners[listener] = internal_listener
