@@ -139,7 +139,6 @@ class TxKazooClientTests(SynchronousTestCase):
         """
         The Partitioner class derived from the client works as expected.
         """
-        import pudb; pudb.set_trace()
         partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
         self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
 
