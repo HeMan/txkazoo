@@ -14,12 +14,15 @@
 
 """Various utilities for testing txkazoo."""
 
+from kazoo.recipe.partitioner import PartitionState
 from twisted.internet.interfaces import IReactorThreads
 from twisted.python.failure import Failure
 from zope.interface import implementer
 
 class FakeKazooClient(object):
+
     """A fake Kazoo client for testing."""
+
     def __init__(self):
         self.listeners = []
 
@@ -35,24 +38,50 @@ class FakeKazooClient(object):
         """No-op."""
 
     def get(self, path, watch=None):
-        """Stores the watch function."""
+        """Store the watch function."""
         self.watch = watch
+
+    def Lock(self, *args, **kwargs):
+        """Build a fake lock, for testing."""
+        return FakeLock(*args, **kwargs)
+
+    def SetPartitioner(self, *args, **kwargs):
+        """Build a fake set partitioner, for testing."""
+        return FakeSetPartitioner(*args, **kwargs)
+
+
+class FakeLock(object):
+
+    """A fake Lock for testing."""
+
+    def __init__(self, path, identifier=None):
+        self.path = path
+        self.identifier = identifier
+
+
+class FakeSetPartitioner(object):
+
+    """A fake SetPartitioner for testing."""
+
+    def __init__(self, *args, **kwargs):
+        self.state = PartitionState.ALLOCATING
+        self.args, self.kwargs = args, kwargs
 
 
 class FakeThreadPool(object):
+
+    """A fake thread pool, for testing.
+
+    It actually just runs things synchronously in the calling thread.
     """
-    A fake thread pool that actually just runs things synchronously in
-    the calling thread.
-    """
+
     def callInThread(self, func, *args, **kw):
-        """
-        Calls ``func`` with given arguments in the calling thread.
-        """
+        """Call ``func`` with given arguments in the calling thread."""
         return func(*args, **kw)
 
     def callInThreadWithCallback(self, onResult, func, *args, **kw):
         """
-        Calls ``func`` with given arguments in the calling thread.
+        Call ``func`` with given arguments in the calling thread.
 
         If ``onResult`` is :const:`None`, it is not used. Otherwise,
         it is called with :const:`True` and the result if the call
@@ -71,10 +100,9 @@ class FakeThreadPool(object):
 
 @implementer(IReactorThreads)
 class FakeReactor(object):
-    """
-    An IReactorThreads implementation that doesn't actually run
-    anything in any other threads.
-    """
+
+    """A fake threaded reactor, for testing."""
+
     def getThreadPool(self):
         """Return a new :class:`FakeThreadPool`."""
         return FakeThreadPool()

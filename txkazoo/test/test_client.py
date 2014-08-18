@@ -13,7 +13,8 @@
 # limitations under the License.
 
 from inspect import currentframe
-from txkazoo.client import _RunCallbacksInReactorThreadWrapper, TxKazooClient
+from kazoo.recipe.partitioner import PartitionState
+from txkazoo import client
 from txkazoo.test.util import FakeReactor, FakeThreadPool, FakeKazooClient
 from twisted.trial.unittest import SynchronousTestCase
 
@@ -21,11 +22,9 @@ from twisted.trial.unittest import SynchronousTestCase
 class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
     def setUp(self):
         self.reactor = FakeReactor()
-        self.pool = FakeThreadPool()
         self.client = FakeKazooClient()
-        self.wrapper = _RunCallbacksInReactorThreadWrapper(self.reactor,
-                                                           self.pool,
-                                                           self.client)
+        self.wrapper = client._RunCallbacksInReactorThreadWrapper(self.reactor,
+                                                                  self.client)
         self.received_event = None
 
     def test_attrs(self):
@@ -33,7 +32,6 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         All of the attributes passed to the wrapper are available.
         """
         for self_attr, wrapper_attr in [("reactor", "_reactor"),
-                                        ("pool", "_pool"),
                                         ("client", "_client")]:
             self.assertIdentical(getattr(self, self_attr),
                                  getattr(self.wrapper, wrapper_attr))
@@ -93,3 +91,67 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         event = object()
         self.client.watch(event)
         self.assertIdentical(self.received_event, event)
+
+
+class TxKazooClientTests(SynchronousTestCase):
+    """
+    Tests for the twisted-wrapped Kazoo client.
+    """
+    def setUp(self):
+        self.reactor = FakeReactor()
+        self.pool = FakeThreadPool()
+        self.client = FakeKazooClient()
+        self.tx_client = client.TxKazooClient(self.reactor,
+                                              self.pool,
+                                              self.client)
+
+    def test_reactor(self):
+        """
+        The txkazoo client uses the appropriate reactor.
+        """
+        self.assertIdentical(self.tx_client._reactor, self.reactor)
+
+    def test_thread_pool(self):
+        """
+        The txkazoo client uses the appropriate thread pool.
+        """
+        self.assertIdentical(self.tx_client._pool, self.pool)
+
+    def test_client_methods(self):
+        """
+        The blocking txkazoo client methods are asynchronified.
+        """
+        self.assertEqual(self.tx_client._blocking_methods,
+                         client._blocking_client_methods)
+
+    def test_lock(self):
+        """
+        The Lock class derived from the client works as expected.
+        """
+        lock = self.tx_client.Lock("xyzzy", identifier="iddqd")
+        self.assertIdentical(lock._reactor, self.reactor)
+        self.assertIdentical(lock._pool, self.pool)
+
+        self.assertEqual(lock.path, "xyzzy")
+        self.assertEqual(lock.identifier, "iddqd")
+
+    def test_partitioner(self):
+        """
+        The Partitioner class derived from the client works as expected.
+        """
+        import pudb; pudb.set_trace()
+        partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
+        self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
+
+        partitioner._partitioner.state = PartitionState.ACQUIRED
+        self.assertEqual(partitioner.state, PartitionState.ACQUIRED)
+
+    def test_cant_allocate_partitioner(self):
+        """When allocating a partitioner raises an exception, the
+        SetPartitioner-like object returned is in the failed state.
+        """
+        def just_raise(*a, **kw):
+            raise ValueError("Something went wrong!")
+        self.client.SetPartitioner = just_raise
+        partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
+        self.assertTrue(partitioner.failed)

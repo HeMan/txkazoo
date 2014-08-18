@@ -15,7 +15,7 @@
 """The Twistified Kazoo client."""
 from functools import partial, wraps
 from funcsigs import signature
-from txkazoo.recipe.partitioner import SetPartitioner
+from txkazoo.recipe.partitioner import _SetPartitionerWrapper
 from thimble import Thimble
 
 
@@ -41,9 +41,8 @@ class _RunCallbacksInReactorThreadWrapper(object):
                               "get_children",
                               "get_children_async")
 
-    def __init__(self, reactor, pool, client):
+    def __init__(self, reactor, client):
         self._reactor = reactor
-        self._pool = pool
         self._client = client
         self._internal_listeners = {}
 
@@ -86,15 +85,13 @@ class _RunCallbacksInReactorThreadWrapper(object):
         return f(**bound_args.arguments)
 
     def _call_in_reactor_thread(self, f, *args, **kwargs):
-        """
-        Call the given function with the given args in the reactor thread.
-        """
+        """Call the given function with args in the reactor thread."""
         self._reactor.callFromThread(f, *args, **kwargs)
 
     def __getattr__(self, attr):
         """
-        Get a method from the underlying client, and, if it is a special method with a
-        watch function, wrap it appropriately.
+        Get a method from the underlying client, and, if it is a special
+        method with a watch function, wrap it appropriately.
 
         :param str attr: The attribute name.
         :return: The attribute value, possibly wrapped.
@@ -105,34 +102,30 @@ class _RunCallbacksInReactorThreadWrapper(object):
         return value
 
 
-_blocking_kazoo_client_methods = ("get", "get_children", "set", "delete",
-                                  "start", "stop", "restart", "close",
-                                  "command", "add_auth", "unchroot",
-                                  "sync", "create", "ensure_path", "exists",
-                                  "get_acls", "set_acls", "transaction")
+_blocking_client_methods = ("get", "get_children", "set", "delete",
+                            "start", "stop", "restart", "close",
+                            "command", "add_auth", "unchroot",
+                            "sync", "create", "ensure_path", "exists",
+                            "get_acls", "set_acls", "transaction")
+# REVIEW: please check that above methods are correct & sufficient
+_blocking_lock_methods = "acquire",
+# REVIEW: what about .cancel, .contenders, .release?
 
 
 def TxKazooClient(reactor, pool, client):
-    """
-    Creates a client for txkazoo.
-    """
+    """Create a client for txkazoo."""
     make_thimble = partial(Thimble, reactor, pool)
 
     wrapper = _RunCallbacksInReactorThreadWrapper(reactor, client)
-    client_thimble = make_thimble(wrapper, _blocking_kazoo_client_methods)
+    client_thimble = make_thimble(wrapper, _blocking_client_methods)
 
-    def _Lock(self, path, identifier=None):
+    def _Lock(path, identifier=None):
         """Return a wrapped :class:`kazoo.recipe.lock.Lock` for this client."""
-        lock = self.client.Lock(path, identifier)
-        # REVIEW: what about .cancel, .contenders, .release?
-        return Thimble(self.reactor, self.pool, lock, ("acquire",))
+        lock = client.Lock(path, identifier)
+        return Thimble(reactor, pool, lock, _blocking_lock_methods)
 
     client_thimble.Lock = _Lock
-
-    def _SetPartitioner(self, path, set, **kwargs):
-        """Return a wrapped ``SetPartitioner`` for this client."""
-        return SetPartitioner(self.client, path, set, **kwargs)
-
-    client_thimble.SetPartitioner = _SetPartitioner
+    client_thimble.SetPartitioner = partial(_SetPartitionerWrapper,
+                                            reactor, pool, client)
 
     return client_thimble
