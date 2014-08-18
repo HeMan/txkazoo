@@ -19,11 +19,13 @@ from twisted.internet.interfaces import IReactorThreads
 from twisted.python.failure import Failure
 from zope.interface import implementer
 
+
 class FakeKazooClient(object):
 
     """A fake Kazoo client for testing."""
 
     def __init__(self):
+        """Initialize a fake Kazoo client for testing."""
         self.listeners = []
 
     def add_listener(self, listener):
@@ -55,6 +57,7 @@ class FakeLock(object):
     """A fake Lock for testing."""
 
     def __init__(self, path, identifier=None):
+        """Initialize fake Lock for testing."""
         self.path = path
         self.identifier = identifier
 
@@ -64,6 +67,7 @@ class FakeSetPartitioner(object):
     """A fake SetPartitioner for testing."""
 
     def __init__(self, *args, **kwargs):
+        """Initialize a fake SetPartitioner for testing."""
         self.state = PartitionState.ALLOCATING
         self.args, self.kwargs = args, kwargs
 

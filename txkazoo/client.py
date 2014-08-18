@@ -89,9 +89,10 @@ class _RunCallbacksInReactorThreadWrapper(object):
         self._reactor.callFromThread(f, *args, **kwargs)
 
     def __getattr__(self, attr):
-        """
-        Get a method from the underlying client, and, if it is a special
-        method with a watch function, wrap it appropriately.
+        """Get a method from the client, and maybe wrap its watch function.
+
+        Get a method from the underlying client. If it is a special method
+        with a watch function, wrap it appropriately.
 
         :param str attr: The attribute name.
         :return: The attribute value, possibly wrapped.
