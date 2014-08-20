@@ -61,8 +61,8 @@ class _RunCallbacksInReactorThreadWrapper(object):
 
         :param listener: A listener previously passed to :meth:`add_listener`.
         """
-        _listener = self._internal_listeners.pop(listener)
-        return self._client.remove_listener(_listener)
+        internal_listener = self._internal_listeners.pop(listener)
+        return self._client.remove_listener(internal_listener)
 
     def _wrapped_method_with_watch_fn(self, f, *args, **kwargs):
         """A wrapped method with a watch function.
