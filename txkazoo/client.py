@@ -109,9 +109,7 @@ _blocking_client_methods = ("get", "get_children", "set", "delete",
                             "command", "add_auth", "unchroot",
                             "sync", "create", "ensure_path", "exists",
                             "get_acls", "set_acls", "transaction")
-# REVIEW: please check that above methods are correct & sufficient
-_blocking_lock_methods = "acquire",
-# REVIEW: what about .cancel, .contenders, .release?
+_blocking_lock_methods = "acquire", "cancel", "contenders", "release"
 
 
 def TxKazooClient(reactor, pool, client):
