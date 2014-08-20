@@ -141,7 +141,6 @@ class TxKazooClientTests(SynchronousTestCase):
         """
         The Partitioner class derived from the client works as expected.
         """
-        partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
         args = "xyzzy", set([1, 2, 3])
         partitioner = self.tx_client.SetPartitioner(*args)
         self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
@@ -160,3 +159,8 @@ class TxKazooClientTests(SynchronousTestCase):
         self.client.SetPartitioner = just_raise
         partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
         self.assertTrue(partitioner.failed)
+
+    def test_partitioner_iter(self):
+        """Iterating over the wrapper yields results from the wrapped."""
+        partitioner = self.tx_client.SetPartitioner("xyzzy", "iddqd")
+        self.assertEqual(list(partitioner), [1])

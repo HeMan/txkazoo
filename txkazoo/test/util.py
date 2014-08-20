@@ -71,6 +71,10 @@ class FakeSetPartitioner(object):
         self.state = PartitionState.ALLOCATING
         self.args, self.kwargs = args, kwargs
 
+    def __iter__(self):
+        """Just yield 1."""
+        yield 1
+
 
 class FakeThreadPool(object):
 
