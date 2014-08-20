@@ -14,6 +14,7 @@
 
 from inspect import currentframe
 from kazoo.recipe.partitioner import PartitionState
+from thimble import Thimble
 from txkazoo import client
 from txkazoo.test.util import FakeReactor, FakeThreadPool, FakeKazooClient
 from twisted.trial.unittest import SynchronousTestCase
@@ -121,6 +122,7 @@ class TxKazooClientTests(SynchronousTestCase):
         """
         The blocking txkazoo client methods are asynchronified.
         """
+        self.assertTrue(isinstance(self.tx_client), Thimble)
         self.assertEqual(self.tx_client._blocking_methods,
                          client._blocking_client_methods)
 
