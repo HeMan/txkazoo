@@ -122,7 +122,7 @@ class TxKazooClientTests(SynchronousTestCase):
         """
         The blocking txkazoo client methods are asynchronified.
         """
-        self.assertTrue(isinstance(self.tx_client), Thimble)
+        self.assertTrue(isinstance(self.tx_client, Thimble))
         self.assertEqual(self.tx_client._blocking_methods,
                          client._blocking_client_methods)
 
