@@ -142,7 +142,11 @@ class TxKazooClientTests(SynchronousTestCase):
         The Partitioner class derived from the client works as expected.
         """
         partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
+        args = "xyzzy", set([1, 2, 3])
+        partitioner = self.tx_client.SetPartitioner(*args)
         self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
+        self.assertEqual(partitioner._partitioner.args, args)
+        self.assertEqual(partitioner._partitioner.kwargs, {})
 
         partitioner._partitioner.state = PartitionState.ACQUIRED
         self.assertEqual(partitioner.state, PartitionState.ACQUIRED)
