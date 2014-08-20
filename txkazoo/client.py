@@ -115,7 +115,18 @@ _blocking_lock_methods = "acquire",
 
 
 def TxKazooClient(reactor, pool, client):
-    """Create a client for txkazoo."""
+    """Create a client for txkazoo.
+
+    :param twisted.internet.interfaces.IReactorThreads reactor: The reactor
+        used to interact with the thread pool.
+    :param ThreadPool pool: The thread pool to which blocking calls will be
+        deferred.
+    :param kazoo.client.KazooClient client: The blocking Kazoo client, whose
+        blocking methods will be deferred to the thread pool.
+    :return: An object with a similar interface to the Kazoo client, but
+        returning deferreds for all blocking methods. The actual method calls
+        will be executed in the thread pool.
+    """
     make_thimble = partial(Thimble, reactor, pool)
 
     wrapper = _RunCallbacksInReactorThreadWrapper(reactor, client)
