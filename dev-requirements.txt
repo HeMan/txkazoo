@@ -5,3 +5,5 @@ pep257==0.3.2
 pyflakes==0.8.1
 pip-tools==0.3.5
 pyroma==1.6
+pudb==2014.1
+mock==1.0.1

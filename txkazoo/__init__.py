@@ -25,6 +25,4 @@ version = __version__
 
 from txkazoo.client import TxKazooClient
 from txkazoo.log import TxLogger
-from txkazoo.recipe.lock import Lock
-from txkazoo.recipe.partitioner import SetPartitioner
-__all__ = ("TxKazooClient", "TxLogger", "Lock", "SetPartitioner")
+__all__ = ("TxKazooClient", "TxLogger")

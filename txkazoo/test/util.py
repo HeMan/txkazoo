@@ -13,24 +13,112 @@
 # limitations under the License.
 
 """Various utilities for testing txkazoo."""
-import mock
 
-from twisted.trial.unittest import TestCase
-from txkazoo import TxKazooClient
+from kazoo.recipe.partitioner import PartitionState
+from twisted.internet.interfaces import IReactorThreads
+from twisted.python.failure import Failure
+from zope.interface import implementer
 
 
-class TxKazooTestCase(TestCase):
+class FakeKazooClient(object):
 
-    """Test case mixin for txkazoo tests."""
+    """A fake Kazoo client for testing."""
 
-    def setUp(self):
-        """Mock actual KazooClient and deferToThread."""
-        self.kazoo_client = mock.patch('kazoo.client.KazooClient').start()
-        self.kz_obj = self.kazoo_client.return_value
-        self.defer_to_thread = mock.patch(
-            'twisted.internet.threads.deferToThread').start()
-        self.txkzclient = TxKazooClient(hosts='abc', threads=20)
+    def __init__(self):
+        """Initialize a fake Kazoo client for testing."""
+        self.listeners = []
 
-    def tearDown(self):
-        """Stop the patching."""
-        mock.patch.stopall()
+    def add_listener(self, listener):
+        """Add a listener."""
+        self.listeners.append(listener)
+
+    def remove_listener(self, listener):
+        """Remove the listener."""
+        self.listeners.remove(listener)
+
+    def close(self):
+        """No-op."""
+
+    def get(self, path, watch=None):
+        """Store the watch function."""
+        self.watch = watch
+
+    def Lock(self, *args, **kwargs):
+        """Build a fake lock, for testing."""
+        return FakeLock(*args, **kwargs)
+
+    def SetPartitioner(self, *args, **kwargs):
+        """Build a fake set partitioner, for testing."""
+        return FakeSetPartitioner(*args, **kwargs)
+
+
+class FakeLock(object):
+
+    """A fake Lock for testing."""
+
+    def __init__(self, path, identifier=None):
+        """Initialize fake Lock for testing."""
+        self.path = path
+        self.identifier = identifier
+
+
+class FakeSetPartitioner(object):
+
+    """A fake SetPartitioner for testing."""
+
+    def __init__(self, *args, **kwargs):
+        """Initialize a fake SetPartitioner for testing."""
+        self.state = PartitionState.ALLOCATING
+        self.args, self.kwargs = args, kwargs
+
+    def __iter__(self):
+        """Just yield 1."""
+        yield 1
+
+
+class FakeThreadPool(object):
+
+    """A fake thread pool, for testing.
+
+    It actually just runs things synchronously in the calling thread.
+    """
+
+    def callInThread(self, func, *args, **kw):
+        """Call ``func`` with given arguments in the calling thread."""
+        return func(*args, **kw)
+
+    def callInThreadWithCallback(self, onResult, func, *args, **kw):
+        """
+        Call ``func`` with given arguments in the calling thread.
+
+        If ``onResult`` is :const:`None`, it is not used. Otherwise,
+        it is called with :const:`True` and the result if the call
+        succeeded, or :const:`False` and the failure if it failed.
+        """
+        if onResult is None:
+            onResult = lambda success, result: None
+
+        try:
+            result = func(*args, **kw)
+        except Exception as e:
+            onResult(False, Failure(e))
+        else:
+            onResult(True, result)
+
+
+@implementer(IReactorThreads)
+class FakeReactor(object):
+
+    """A fake threaded reactor, for testing."""
+
+    def getThreadPool(self):
+        """Return a new :class:`FakeThreadPool`."""
+        return FakeThreadPool()
+
+    def callInThread(self, f, *args, **kwargs):
+        """Just call the function with the arguments."""
+        return f(*args, **kwargs)
+
+    def callFromThread(self, f, *args, **kw):
+        """Just call the function with the arguments."""
+        return f(*args, **kw)

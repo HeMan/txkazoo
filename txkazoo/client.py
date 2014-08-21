@@ -13,129 +13,130 @@
 # limitations under the License.
 
 """The Twistified Kazoo client."""
-from functools import partial
-from txkazoo.log import TxLogger
-from kazoo import client
-from twisted.internet import reactor, threads
-from txkazoo.recipe.lock import Lock
-from txkazoo.recipe.partitioner import SetPartitioner
+from functools import partial, wraps
+from funcsigs import signature
+from txkazoo.recipe.partitioner import _SetPartitionerWrapper
+from thimble import Thimble
 
 
-class TxKazooClient(object):
-
-    """Twisted wrapper for `kazoo.client.KazooClient`.
-
-    Runs blocking methods of `kazoo.client.KazooClient` in a different
-    thread, returning Deferreds that fire with the method's return value
-    or errback with any exception occurred during method execution.
+class _RunCallbacksInReactorThreadWrapper(object):
 
     """
+    A wrapper for a Kazoo client.
 
-    kz_get_attributes = [
-        'handler',
-        'retry',
-        'state',
-        'client_state',
-        'client_id',
-        'connected'
-    ]
+    Its job is making sure the listeners and watch functions are called in a
+    reactor thread.
 
-    def __init__(self, **kwargs):
-        """Initialize `TxKazooClient`.
+    This is internal, because it doesn't make any sense to use by itself; it
+    wraps a blocking Kazoo client, but assumes that e.g. listeners and watch
+    functions ought to be called in the reactor thread. As a result, it only
+    makes sense if used in conjunction with something that will defer all the
+    blocking method calls to a thread pool, such as a :class:`Thimble`.
+    """
 
-        Takes same arguments as KazooClient and extra keyword argument
-        `threads` that suggests thread pool size to be used
+    _methods_with_watch_fn = ("exists",
+                              "exists_async",
+                              "get",
+                              "get_async",
+                              "get_children",
+                              "get_children_async")
 
-        """
-        num_threads = kwargs.pop('threads', 10)
-        reactor.suggestThreadPoolSize(num_threads)
-
-        log = kwargs.pop('txlog', None)
-        if log:
-            kwargs['logger'] = TxLogger(log)
-
-        self.client = client.KazooClient(**kwargs)
-        self._internal_listeners = dict()
-
-    def __getattr__(self, name):
-        """Get and maybe wrap an attribute from the wrapped client.
-
-        If ``name`` refers to a blocking method, executes the method
-        in a thread pool. Otherwise, perform regular attribute access
-        on the wrapped client.
-
-        :return: if ``name`` is the name of a blocking method, a
-                 :class:`twisted.internet.defer.Deferred` that fires
-                 with result of requested method. Otherwise, the
-                 wrapped client's attribute with the given name.
-
-        """
-        if name in self.kz_get_attributes:
-            # Assuming all attributes access are not blocking
-            return getattr(self.client, name)
-
-        blocking_method = getattr(self.client, name)
-        return partial(threads.deferToThread, blocking_method)
+    def __init__(self, reactor, client):
+        self._reactor = reactor
+        self._client = client
+        self._internal_listeners = {}
 
     def add_listener(self, listener):
         """Add the given listener to the wrapped client.
 
-        Even though the event will be coming from the txkazoo thread,
-        the listener will be called in the reactor thread. This method
-        should only be called from the reactor thread.
-
+        The listener will be wrapped, so that it will be called in the reactor
+        thread. This way, it can safely use Twisted APIs.
         """
-        def _listener(state):
-            reactor.callFromThread(listener, state)
-
-        self._internal_listeners[listener] = _listener
-        return self.client.add_listener(_listener)
+        internal_listener = partial(self._call_in_reactor_thread, listener)
+        self._internal_listeners[listener] = internal_listener
+        return self._client.add_listener(internal_listener)
 
     def remove_listener(self, listener):
-        """Remove the given listener from the wrapped client."""
-        _listener = self._internal_listeners.pop(listener)
-        self.client.remove_listener(_listener)
+        """Remove the given listener from the wrapped client.
 
-    def _watch_func(self, func, path, watch=None, **kwargs):
-        if not watch:
-            return threads.deferToThread(func, path, **kwargs)
+        :param listener: A listener previously passed to :meth:`add_listener`.
+        """
+        internal_listener = self._internal_listeners.pop(listener)
+        return self._client.remove_listener(internal_listener)
 
-        def _watch(event):
-            # Called from kazoo thread. Replaying in reactor
-            reactor.callFromThread(watch, event)
+    def _wrapped_method_with_watch_fn(self, f, *args, **kwargs):
+        """A wrapped method with a watch function.
 
-        return threads.deferToThread(func, path, watch=_watch, **kwargs)
+        When this method is called, it will call the underlying method with
+        the same arguments, *except* that if the ``watch`` argument isn't
+        :data:`None`, it will be replaced with a wrapper around that watch
+        function, so that the watch function will be called in the reactor
+        thread. This means that the watch function can safely use Twisted
+        APIs.
+        """
+        bound_args = signature(f).bind(*args, **kwargs)
+        orig_watch = bound_args.arguments["watch"]
 
-    def exists(self, path, watch=None):
-        """See py:func:`kazoo.client.KazooClient.exists`."""
-        return self._watch_func(self.client.exists, path, watch)
+        if orig_watch is not None:
+            wrapped_watch = partial(self._call_in_reactor_thread, orig_watch)
+            wrapped_watch = wraps(orig_watch)(wrapped_watch)
+            bound_args.arguments["watch"] = wrapped_watch
 
-    def exists_async(self, path, watch=None):
-        """See py:func:`kazoo.client.KazooClient.exists_async`."""
-        return self._watch_func(self.client.exists_async, path, watch)
+        return f(**bound_args.arguments)
 
-    def get(self, path, watch=None):
-        """See py:func:`kazoo.client.KazooClient.get`."""
-        return self._watch_func(self.client.get, path, watch)
+    def _call_in_reactor_thread(self, f, *args, **kwargs):
+        """Call the given function with args in the reactor thread."""
+        self._reactor.callFromThread(f, *args, **kwargs)
 
-    def get_async(self, path, watch=None):
-        """See py:func:`kazoo.client.KazooClient.get_async`."""
-        return self._watch_func(self.client.get_async, path, watch)
+    def __getattr__(self, attr):
+        """Get an attr from the client, and maybe wrap its watch function.
 
-    def get_children(self, path, watch=None, include_data=False):
-        """See py:func:`kazoo.client.KazooClient.get_children`."""
-        return self._watch_func(self.client.get_children,
-                                path, watch, include_data=include_data)
+        First, get the attribute with the given name from the
+        underlying client. If the attribute is a special method with a
+        watch function, wrap that watch function appropriately.
 
-    def get_children_async(self, path, watch=None, include_data=False):
-        """See py:func:`kazoo.client.KazooClient.get_children_async`."""
-        return self._watch_func(self.client.get_children_async,
-                                path, watch, include_data=include_data)
+        :param str attr: The attribute name.
+        :return: The attribute value, possibly wrapped.
+        """
+        value = getattr(self._client, attr)
+        if attr in self._methods_with_watch_fn:
+            value = partial(self._wrapped_method_with_watch_fn, value)
+        return value
 
-    def Lock(self, path, identifier=None):
-        """Return a wrapped ``Lock`` for this client."""
-        return Lock(self.client.Lock(path, identifier))
 
-    def SetPartitioner(self, path, set, **kwargs):
-        """Return a wrapped ``SetPartitioner`` for this client."""
-        return SetPartitioner(self.client, path, set, **kwargs)
+_blocking_client_methods = ("get", "get_children", "set", "delete",
+                            "start", "stop", "restart", "close",
+                            "command", "add_auth", "unchroot",
+                            "sync", "create", "ensure_path", "exists",
+                            "get_acls", "set_acls", "transaction")
+_blocking_lock_methods = "acquire", "cancel", "contenders", "release"
+
+
+def TxKazooClient(reactor, pool, client):
+    """Create a client for txkazoo.
+
+    :param twisted.internet.interfaces.IReactorThreads reactor: The reactor
+        used to interact with the thread pool.
+    :param ThreadPool pool: The thread pool to which blocking calls will be
+        deferred.
+    :param kazoo.client.KazooClient client: The blocking Kazoo client, whose
+        blocking methods will be deferred to the thread pool.
+    :return: An object with a similar interface to the Kazoo client, but
+        returning deferreds for all blocking methods. The actual method calls
+        will be executed in the thread pool.
+    """
+    make_thimble = partial(Thimble, reactor, pool)
+
+    wrapper = _RunCallbacksInReactorThreadWrapper(reactor, client)
+    client_thimble = make_thimble(wrapper, _blocking_client_methods)
+
+    def _Lock(path, identifier=None):
+        """Return a wrapped :class:`kazoo.recipe.lock.Lock` for this client."""
+        lock = client.Lock(path, identifier)
+        return Thimble(reactor, pool, lock, _blocking_lock_methods)
+
+    client_thimble.Lock = _Lock
+    client_thimble.SetPartitioner = partial(_SetPartitionerWrapper,
+                                            reactor, pool, client)
+
+    return client_thimble

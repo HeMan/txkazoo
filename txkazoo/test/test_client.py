@@ -12,36 +12,155 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import mock
+from inspect import currentframe
+from kazoo.recipe.partitioner import PartitionState
+from thimble import Thimble
+from txkazoo import client
+from txkazoo.test.util import FakeReactor, FakeThreadPool, FakeKazooClient
+from twisted.trial.unittest import SynchronousTestCase
 
-from txkazoo.client import TxKazooClient
-from txkazoo.test.util import TxKazooTestCase
 
+class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
+    def setUp(self):
+        self.reactor = FakeReactor()
+        self.client = FakeKazooClient()
+        self.wrapper = client._RunCallbacksInReactorThreadWrapper(self.reactor,
+                                                                  self.client)
+        self.received_event = None
 
-class TxKazooClientTests(TxKazooTestCase):
-
-    """Tests for `TxKazooClient`."""
-    @mock.patch('txkazoo.client.reactor')
-    def test_init(self, mock_reactor):
-        """__init__ sets up thread size and creates KazooClient."""
-        self.txkzclient = TxKazooClient(hosts='abc', arg2='12', threads=20)
-        mock_reactor.suggestThreadPoolSize.assert_called_once_with(20)
-        self.kazoo_client.assert_called_with(hosts='abc', arg2='12')
-        self.assertEqual(self.txkzclient.client, self.kz_obj)
-
-    def test_method(self):
-        """Any method is called in seperate thread."""
-        d = self.txkzclient.start()
-        self.defer_to_thread.assert_called_once_with(
-            self.txkzclient.client.start)
-        self.assertEqual(d, self.defer_to_thread.return_value)
-
-    def test_property_get(self):
-        """Accessing property does not defer to thread.
-
-        It is returned immediately
-
+    def test_attrs(self):
         """
-        s = self.txkzclient.state
-        self.assertFalse(self.defer_to_thread.called)
-        self.assertEqual(s, self.kazoo_client.return_value.state)
+        All of the attributes passed to the wrapper are available.
+        """
+        for self_attr, wrapper_attr in [("reactor", "_reactor"),
+                                        ("client", "_client")]:
+            self.assertIdentical(getattr(self, self_attr),
+                                 getattr(self.wrapper, wrapper_attr))
+
+    def _assert_in_reactor_thread(self, event):
+        """
+        Asserts that we would be called in the reactor thread, by checking
+        that this function's caller is :meth:`FakeReactor.callFromThread`.
+        """
+        caller_frame = currentframe().f_back
+        self.assertIdentical(caller_frame.f_locals["self"], self.reactor)
+        self.assertEqual(caller_frame.f_code.co_name, "callFromThread")
+        self.received_event = event
+
+    def test_add_listener(self):
+        """
+        Tests that a listener is added to the underlying client, after
+        being wrapped in such a way that it would be executed in the
+        reactor thread.
+        """
+        self.wrapper.add_listener(self._assert_in_reactor_thread)
+        event = object()
+        internal_listener, = self.client.listeners
+        internal_listener(event)
+        self.assertIdentical(self.received_event, event)
+
+    def test_remove_listener(self):
+        """Removing a listener works."""
+        listener = lambda state: state
+        self.wrapper.add_listener(listener)
+        self.assertEqual(len(self.client.listeners), 1)
+        self.wrapper.remove_listener(listener)
+        self.assertEqual(len(self.client.listeners), 0)
+
+    def test_remove_nonexistent_listener(self):
+        """
+        Attempting to remove a listener that was never added raises an
+        exception.
+        """
+        self.assertRaises(KeyError, self.wrapper.remove_listener, object())
+
+    def test_regular_method(self):
+        """
+        Regular methods (methods that do not have a watch function) can be
+        accessed through the wrapper.
+        """
+        self.assertIdentical(self.wrapper.close.im_func,
+                             self.client.close.im_func)
+
+    def test_watch_function_method(self):
+        """
+        Methods that have a watch function will get called with a wrapped
+        watch function that calls the original watch function in the
+        reactor thread.
+        """
+        self.wrapper.get("abc", watch=self._assert_in_reactor_thread)
+        event = object()
+        self.client.watch(event)
+        self.assertIdentical(self.received_event, event)
+
+
+class TxKazooClientTests(SynchronousTestCase):
+    """
+    Tests for the twisted-wrapped Kazoo client.
+    """
+    def setUp(self):
+        self.reactor = FakeReactor()
+        self.pool = FakeThreadPool()
+        self.client = FakeKazooClient()
+        self.tx_client = client.TxKazooClient(self.reactor,
+                                              self.pool,
+                                              self.client)
+
+    def test_reactor(self):
+        """
+        The txkazoo client uses the appropriate reactor.
+        """
+        self.assertIdentical(self.tx_client._reactor, self.reactor)
+
+    def test_thread_pool(self):
+        """
+        The txkazoo client uses the appropriate thread pool.
+        """
+        self.assertIdentical(self.tx_client._pool, self.pool)
+
+    def test_client_methods(self):
+        """
+        The blocking txkazoo client methods are asynchronified.
+        """
+        self.assertTrue(isinstance(self.tx_client, Thimble))
+        self.assertEqual(self.tx_client._blocking_methods,
+                         client._blocking_client_methods)
+
+    def test_lock(self):
+        """
+        The Lock class derived from the client works as expected.
+        """
+        lock = self.tx_client.Lock("xyzzy", identifier="iddqd")
+        self.assertIdentical(lock._reactor, self.reactor)
+        self.assertIdentical(lock._pool, self.pool)
+
+        self.assertEqual(lock.path, "xyzzy")
+        self.assertEqual(lock.identifier, "iddqd")
+
+    def test_partitioner(self):
+        """
+        The Partitioner class derived from the client works as expected.
+        """
+        args = "xyzzy", set([1, 2, 3])
+        partitioner = self.tx_client.SetPartitioner(*args)
+        self.assertEqual(partitioner.state, PartitionState.ALLOCATING)
+        self.assertEqual(partitioner._partitioner.args, args)
+        self.assertEqual(partitioner._partitioner.kwargs, {})
+
+        partitioner._partitioner.state = PartitionState.ACQUIRED
+        self.assertEqual(partitioner.state, PartitionState.ACQUIRED)
+
+    def test_cant_allocate_partitioner(self):
+        """When allocating a partitioner raises an exception, the
+        SetPartitioner-like object returned is in the failed state.
+        """
+        def just_raise(*a, **kw):
+            raise ValueError("Something went wrong!")
+        self.client.SetPartitioner = just_raise
+        partitioner = self.tx_client.SetPartitioner("xyzzy", set([1, 2, 3]))
+        self.assertTrue(partitioner.failed)
+
+    def test_partitioner_iter(self):
+        """Iterating over the wrapper yields results from the wrapped."""
+        partitioner = self.tx_client.SetPartitioner("xyzzy", "iddqd")
+        self.assertEqual(list(partitioner), [1])
