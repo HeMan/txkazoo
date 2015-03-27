@@ -68,3 +68,16 @@ class WatchChildrenTests(SynchronousTestCase):
         self.assertEqual(result[1], '/foo')
         self.assertEqual(result[3], False)
         self.assertEqual(result[4], True)
+
+    def test_error(self):
+        """
+        If the call to :obj:`ChildrenWatch` raises an exception, the returned
+        Deferred will fail with that exception.
+        """
+        def FCW(*args, **kwargs):
+            raise RuntimeError('foo')
+        result = watch_children(self.tx_client, '/foo', None,
+                                ChildrenWatch=FCW)
+        f = self.failureResultOf(result)
+        self.assertEqual(f.type, RuntimeError)
+        self.assertEqual(str(f.value), 'foo')
