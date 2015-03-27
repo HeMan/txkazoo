@@ -33,7 +33,6 @@ def watch_children(kzclient,
     """
 
     def wrapped_func(*args, **kwargs):
-        # TODO: use thimble to block so we can return the result of the func!
         return blockingCallFromThread(kzclient.reactor, func, *args, **kwargs)
 
     return deferToThreadPool(
