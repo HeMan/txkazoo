@@ -139,4 +139,9 @@ def TxKazooClient(reactor, pool, client):
     client_thimble.SetPartitioner = partial(_SetPartitionerWrapper,
                                             reactor, pool, client)
 
+    # Expose these so e.g. recipes can access them from the kzclient
+    client.reactor = reactor
+    client.pool = pool
+    client.kazoo_client = client
+
     return client_thimble
