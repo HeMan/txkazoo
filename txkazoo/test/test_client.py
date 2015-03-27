@@ -93,6 +93,15 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         self.client.watch(event)
         self.assertIdentical(self.received_event, event)
 
+    def test_optional_watch_functions(self):
+        """
+        Methods that take an optional watch function still work when the watch
+        function is not provided.
+        """
+        self.wrapper.get("abc")
+        event = object()
+        self.assertEqual(self.client.watch, None)
+
 
 class TxKazooClientTests(SynchronousTestCase):
     """

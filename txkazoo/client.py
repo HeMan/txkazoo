@@ -75,7 +75,7 @@ class _RunCallbacksInReactorThreadWrapper(object):
         APIs.
         """
         bound_args = signature(f).bind(*args, **kwargs)
-        orig_watch = bound_args.arguments["watch"]
+        orig_watch = bound_args.arguments.get("watch")
 
         if orig_watch is not None:
             wrapped_watch = partial(self._call_in_reactor_thread, orig_watch)
