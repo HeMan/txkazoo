@@ -26,10 +26,10 @@ def watch_children(kzclient,
     Install a Kazoo :obj:`ChildrenWatch` on the given path.
 
     The given `func` will be called in the reactor thread when any children are
-    created, deleted, or modified.
+    created or deleted, or if the node itself is deleted.
 
     Returns a Deferred which usually has no result, but may fail with an
-        exception if e.g. the path does not exist.
+    exception if e.g. the path does not exist.
     """
 
     def wrapped_func(*args, **kwargs):
