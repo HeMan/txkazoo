@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from inspect import currentframe
 from kazoo.recipe.partitioner import PartitionState
 from thimble import Thimble
 from txkazoo import client
@@ -42,9 +41,8 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         Asserts that we would be called in the reactor thread, by checking
         that this function's caller is :meth:`FakeReactor.callFromThread`.
         """
-        caller_frame = currentframe().f_back
-        self.assertIdentical(caller_frame.f_locals["self"], self.reactor)
-        self.assertEqual(caller_frame.f_code.co_name, "callFromThread")
+        self.assertEqual(self.reactor.context.getContext('virtual-thread'),
+                         'reactor')
         self.received_event = event
 
     def test_add_listener(self):

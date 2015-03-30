@@ -16,6 +16,7 @@
 
 from kazoo.recipe.partitioner import PartitionState
 from twisted.internet.interfaces import IReactorThreads
+from twisted.python.context import ContextTracker
 from twisted.python.failure import Failure
 from zope.interface import implementer
 
@@ -111,14 +112,21 @@ class FakeReactor(object):
 
     """A fake threaded reactor, for testing."""
 
+    def __init__(self):
+        self.context = ContextTracker()
+
     def getThreadPool(self):
         """Return a new :class:`FakeThreadPool`."""
         return FakeThreadPool()
 
     def callInThread(self, f, *args, **kwargs):
         """Just call the function with the arguments."""
-        return f(*args, **kwargs)
+        self.context.callWithContext(
+            {'virtual-thread': 'non-reactor'},
+            f, *args, **kwargs)
 
     def callFromThread(self, f, *args, **kw):
         """Just call the function with the arguments."""
-        return f(*args, **kw)
+        self.context.callWithContext(
+            {'virtual-thread': 'reactor'},
+            f, *args, **kw)

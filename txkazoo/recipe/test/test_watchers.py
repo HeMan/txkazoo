@@ -35,6 +35,8 @@ class WatchChildrenTests(SynchronousTestCase):
         self.tx_client = TxKazooClient(self.reactor, self.pool, self.client)
 
     def _my_callback(self, children):
+        self.assertEqual(self.reactor.context.getContext('virtual-thread'),
+                         'reactor')
         return ('called back', children)
 
     def test_basic_watch(self):
