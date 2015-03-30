@@ -41,8 +41,11 @@ class WatchChildrenTests(SynchronousTestCase):
 
     def test_basic_watch(self):
         """
-        The callback is invoked in the reactor thread and its result is
-        propagated to the :obj:`ChildrenWatch`.
+        Parameters are passed to :obj:`ChildrenWatch`, and the callback
+        function is wrapped such that it is run in the reactor thread and its
+        result is returned to the ChildrenWatch. This is important since
+        ChildrenWatch interprets the result to determine whether to continue
+        triggering callbacks.
         """
         result = watch_children(self.tx_client, '/foo', self._my_callback,
                                 ChildrenWatch=FakeChildrenWatch)
