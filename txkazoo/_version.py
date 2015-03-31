@@ -14,4 +14,4 @@
 
 """The canonical location of the txkazoo version."""
 
-__version__ = '0.0.5'
+__version__ = '0.0.6b1'
