@@ -1,5 +1,5 @@
-kazoo==2.0
-Twisted==14.0.0
-zope.interface==4.1.1
-thimble==0.1.1
-funcsigs==0.4
+kazoo>=2.0
+Twisted>=14.0.0
+zope.interface>=4.1.1
+thimble>=0.1.1
+funcsigs>=0.4
