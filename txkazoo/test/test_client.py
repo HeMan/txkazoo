@@ -97,7 +97,6 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         function is not provided.
         """
         self.wrapper.get("abc")
-        event = object()
         self.assertEqual(self.client.watch, None)
 
 

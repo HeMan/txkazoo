@@ -31,7 +31,6 @@ def watch_children(kzclient,
     Returns a Deferred which usually has no result, but may fail with an
     exception if e.g. the path does not exist.
     """
-
     def wrapped_func(*args, **kwargs):
         return blockingCallFromThread(kzclient.reactor, func, *args, **kwargs)
 

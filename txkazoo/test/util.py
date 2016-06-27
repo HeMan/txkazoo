@@ -113,6 +113,7 @@ class FakeReactor(object):
     """A fake threaded reactor, for testing."""
 
     def __init__(self):
+        """Initialize a fake threaded reactor, for testing."""
         self.context = ContextTracker()
 
     def getThreadPool(self):
