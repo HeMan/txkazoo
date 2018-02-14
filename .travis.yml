@@ -1,15 +1,16 @@
 sudo: false
 language: python
-python:
-  - "2.7"
-  - "3.6"
-env:
-  - TOXENV=py27
-  - TOXENV=py36
-  - TOXENV=pypy
 matrix:
+  include:
+    - python: 2.7
+      env: TOXENV=py27
+    - python: 3.6
+      env: TOXENV=py36
+    - python: pypy
+      env: TOXENV=pypy
   allow_failures:
     - env: TOXENV=pypy
+
 install:
   - pip install tox
   - pip install coveralls
