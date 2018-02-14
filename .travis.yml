@@ -2,6 +2,7 @@ sudo: false
 language: python
 env:
   - TOXENV=py27
+  - TOXENV=py36
   - TOXENV=pypy
 matrix:
   allow_failures:
