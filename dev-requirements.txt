@@ -7,3 +7,4 @@ pip-tools==1.11.0
 pudb==2017.1.4
 pyflakes==1.6.0
 pyroma==2.3
+pip-review==1.0
