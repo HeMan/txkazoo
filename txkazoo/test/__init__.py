@@ -1,1 +1,1 @@
-"""Test suite for base :mod:`txkazoo` functionality. """
+"""Test suite for base :mod:`txkazoo` functionality."""

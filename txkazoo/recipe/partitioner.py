@@ -22,7 +22,6 @@ _blocking_partitioner_methods = "finish", "release_set", "wait_for_acquire"
 
 
 class _SetPartitionerWrapper(object):
-
     """Wrapper for :class:`~kazoo.recipe.partitioner.SetPartitioner`.
 
     This is a Twisted-friendly wrapped based on a thread pool.

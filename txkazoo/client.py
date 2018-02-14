@@ -20,7 +20,6 @@ from thimble import Thimble
 
 
 class _RunCallbacksInReactorThreadWrapper(object):
-
     """
     A wrapper for a Kazoo client.
 

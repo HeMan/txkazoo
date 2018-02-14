@@ -22,7 +22,6 @@ from zope.interface import implementer
 
 
 class FakeKazooClient(object):
-
     """A fake Kazoo client for testing."""
 
     def __init__(self):
@@ -54,7 +53,6 @@ class FakeKazooClient(object):
 
 
 class FakeLock(object):
-
     """A fake Lock for testing."""
 
     def __init__(self, path, identifier=None):
@@ -64,7 +62,6 @@ class FakeLock(object):
 
 
 class FakeSetPartitioner(object):
-
     """A fake SetPartitioner for testing."""
 
     def __init__(self, *args, **kwargs):
@@ -78,7 +75,6 @@ class FakeSetPartitioner(object):
 
 
 class FakeThreadPool(object):
-
     """A fake thread pool, for testing.
 
     It actually just runs things synchronously in the calling thread.
@@ -110,7 +106,6 @@ class FakeThreadPool(object):
 
 @implementer(IReactorThreads)
 class FakeReactor(object):
-
     """A fake threaded reactor, for testing."""
 
     def __init__(self):
