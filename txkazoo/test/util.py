@@ -97,7 +97,8 @@ class FakeThreadPool(object):
         succeeded, or :const:`False` and the failure if it failed.
         """
         if onResult is None:
-            onResult = lambda success, result: None
+            def onResult(success, result):
+                return None
 
         try:
             result = func(*args, **kw)

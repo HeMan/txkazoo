@@ -21,8 +21,8 @@ blocking it.
 
 """
 from txkazoo._version import __version__
-version = __version__
 
 from txkazoo.client import TxKazooClient
 from txkazoo.log import TxLogger
+version = __version__
 __all__ = ("TxKazooClient", "TxLogger")

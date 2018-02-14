@@ -1,20 +1,23 @@
 from os.path import dirname, join
+import re
 from setuptools import find_packages, setup
 from setuptools.command.test import test as TestCommand
 from sys import exit
 
 package_name = "txkazoo"
 
+
 def read(path):
     with open(join(dirname(__file__), path)) as f:
         return f.read()
 
-import re
+
 version_line = read("{0}/_version.py".format(package_name))
 match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]$", version_line, re.M)
 version_string = match.group(1)
 
 dependencies = map(str.split, read("requirements.txt").split())
+
 
 class Tox(TestCommand):
     def finalize_options(self):
@@ -22,9 +25,10 @@ class Tox(TestCommand):
         self.test_suite = True
 
     def run_tests(self):
-        #import here, cause outside the eggs aren't loaded
+        # import here, cause outside the eggs aren't loaded
         import tox
         exit(tox.cmdline([]))
+
 
 setup(name=package_name,
       version=version_string,

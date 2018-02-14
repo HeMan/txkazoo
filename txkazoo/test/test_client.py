@@ -59,7 +59,8 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
 
     def test_remove_listener(self):
         """Removing a listener works."""
-        listener = lambda state: state
+        def listener(state):
+            return state
         self.wrapper.add_listener(listener)
         self.assertEqual(len(self.client.listeners), 1)
         self.wrapper.remove_listener(listener)
@@ -77,8 +78,8 @@ class _RunCallbacksInReactorThreadTests(SynchronousTestCase):
         Regular methods (methods that do not have a watch function) can be
         accessed through the wrapper.
         """
-        self.assertIdentical(self.wrapper.close.im_func,
-                             self.client.close.im_func)
+        self.assertIdentical(self.wrapper.close.__func__,
+                             self.client.close.__func__)
 
     def test_watch_function_method(self):
         """
